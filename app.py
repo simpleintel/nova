@@ -26,6 +26,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # ── Config ───────────────────────────────────────────────────────────────────
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 RETENTION_DAYS = int(os.environ.get("RETENTION_DAYS", "730"))  # 2 years default
+ADSENSE_ID = os.environ.get("ADSENSE_ID", "")  # e.g. ca-pub-1234567890123456
 
 # ── App Setup ────────────────────────────────────────────────────────────────
 app = Flask(__name__)
@@ -221,7 +222,7 @@ def _try_match(sid: str):
 # ── Auth Routes ──────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
-    return render_template("index.html", google_client_id=GOOGLE_CLIENT_ID, retention_days=RETENTION_DAYS, tos_version=TOS_VERSION)
+    return render_template("index.html", google_client_id=GOOGLE_CLIENT_ID, retention_days=RETENTION_DAYS, tos_version=TOS_VERSION, adsense_id=ADSENSE_ID)
 
 
 @app.route("/tos")

@@ -96,8 +96,14 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
 .se:disabled{opacity:.3;cursor:not-allowed}
 .ca{display:flex;gap:6px;margin-top:8px;justify-content:center}
 
+/* ads */
+.ad-slot{margin:16px auto;text-align:center;overflow:hidden;max-width:728px;min-height:50px}
+.ad-slot-chat{flex-shrink:0;border-bottom:1px solid var(--br);background:var(--bg2);min-height:50px;max-height:100px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.ad-label{font-size:9px;color:var(--tx2);opacity:.4;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
+
 @media(max-width:600px){
   #A h1,#L h1{font-size:1.8rem}.mg{max-width:85%}.hd .ct{display:none}.auth-box{width:260px}
+  .ad-slot{max-width:320px}
 }
 </style>
 </head>
@@ -131,6 +137,12 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
       All connections are logged for legal compliance.<br>
       IP addresses and session data are retained for {{ retention_days }} days.
     </div>
+    {% if adsense_id %}
+    <div class="ad-slot" id="ad-auth">
+      <div class="ad-label">Advertisement</div>
+      <ins class="adsbygoogle" style="display:block" data-ad-client="{{ adsense_id }}" data-ad-slot="auth-banner" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    </div>
+    {% endif %}
   </div>
 </div>
 
@@ -147,6 +159,12 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
     <div class="ob"><span class="d"></span><span id="ol">0</span> online</div><br>
     <button class="b bp" id="go">Start Chatting</button>
     <p class="sub">Messages go directly between browsers<br>The server only matches and logs connections</p>
+    {% if adsense_id %}
+    <div class="ad-slot" id="ad-lobby">
+      <div class="ad-label">Advertisement</div>
+      <ins class="adsbygoogle" style="display:block" data-ad-client="{{ adsense_id }}" data-ad-slot="lobby-banner" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    </div>
+    {% endif %}
   </div>
 </div>
 
@@ -157,6 +175,11 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
     <span class="ct"><span class="sd w" id="sd"></span><span id="st">Looking for a stranger…</span></span>
     <div class="ob sm"><span class="d"></span><span id="oc">0</span> online</div>
   </header>
+  {% if adsense_id %}
+  <div class="ad-slot-chat" id="ad-chat">
+    <ins class="adsbygoogle" style="display:inline-block;width:728px;height:90px" data-ad-client="{{ adsense_id }}" data-ad-slot="chat-banner"></ins>
+  </div>
+  {% endif %}
   <div class="ml" id="ml"></div>
   <div class="ti" id="ti"><div class="td"><span></span><span></span><span></span></div><span>Stranger is typing…</span></div>
   <div class="ia">
@@ -171,6 +194,17 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
   </div>
 </div>
 
+{% if adsense_id %}
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ adsense_id }}" crossorigin="anonymous"></script>
+<script>
+  // Push ads after page loads
+  window.addEventListener("load",()=>{
+    document.querySelectorAll(".adsbygoogle").forEach(()=>{
+      try{(adsbygoogle=window.adsbygoogle||[]).push({})}catch(e){}
+    });
+  });
+</script>
+{% endif %}
 {% if google_client_id %}
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 {% endif %}
