@@ -1,8 +1,8 @@
 /**
- * Nova — P2P Client with Google OAuth + email fallback.
+ * Nova — P2P Client with Google OAuth.
  *
  * Security layers:
- *   1. Google OAuth / email login (identity on server)
+ *   1. Google OAuth (verified identity on server)
  *   2. IP + session logged server-side on every action
  *   3. All chat goes over WebRTC DataChannel (P2P, server never sees messages)
  */
@@ -23,7 +23,6 @@ let pc = null;
 let dc = null;
 let matched = false;
 let wt = null, wasT = false;
-let isSignup = false;
 
 function show(el){document.querySelectorAll(".s").forEach(s=>s.classList.remove("on"));el.classList.add("on")}
 function clear(){ml.innerHTML=""}
@@ -92,33 +91,6 @@ if(GCID){
     });
   });
 }
-
-// Email login/signup toggle
-const switchEl=$("a-switch");
-const loginBtn=$("a-login");
-if(switchEl){
-  switchEl.onclick=()=>{
-    isSignup=!isSignup;
-    loginBtn.textContent=isSignup?"Sign Up":"Log In";
-    switchEl.textContent=isSignup?"Log in instead":"Sign up";
-    $("a-toggle").firstChild.textContent=isSignup?"Have an account? ":"No account? ";
-  };
-}
-
-loginBtn.onclick=async()=>{
-  const email=$("ae").value.trim(), pw=$("ap").value;
-  $("a-err").textContent="";
-  if(!tosCb.checked){
-    $("a-err").textContent="You must accept the Terms of Service.";
-    return;
-  }
-  const d=await api("/api/auth/email",{action:isSignup?"signup":"login",email,password:pw,tos_accepted:true});
-  if(d.ok) enterLobby(d.user);
-  else $("a-err").textContent=d.err||"Auth failed";
-};
-
-$("ap").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();loginBtn.click()}};
-$("ae").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("ap").focus()}};
 
 $("logout").onclick=async()=>{
   await fetch("/api/logout",{method:"POST"});

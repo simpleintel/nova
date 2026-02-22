@@ -22,15 +22,7 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
 #A .tag{color:var(--tx2);margin-bottom:1.6rem}
 .auth-box{width:300px;margin:0 auto}
 .g-wrap{margin-bottom:14px;display:flex;justify-content:center}
-.divider{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--tx2);font-size:12px}
-.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--br)}
-.af{display:flex;flex-direction:column;gap:10px}
-.af input{font:inherit;font-size:14px;padding:10px 14px;border:1px solid var(--br);border-radius:10px;outline:none;background:var(--bg2);color:var(--tx)}
-.af input:focus{border-color:var(--ac)}
-.af .b{justify-content:center}
 .ae{color:var(--rd);font-size:13px;min-height:18px;margin-top:4px}
-.at{font-size:13px;color:var(--tx2);margin-top:10px}
-.at a{color:var(--ac);cursor:pointer;text-decoration:underline}
 .shield{margin-top:1.5rem;font-size:11px;color:var(--tx2);opacity:.7;line-height:1.6}
 .shield b{color:var(--tx)}
 .tos-row{display:flex;align-items:flex-start;gap:8px;margin-top:10px;text-align:left;font-size:12px;color:var(--tx2)}
@@ -115,22 +107,12 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
     <h1>No<b>va</b></h1>
     <p class="tag">Peer-to-peer chat with strangers</p>
     <div class="auth-box">
-      {% if google_client_id %}
-      <!-- Google Sign-In button rendered here -->
-      <div class="g-wrap"><div id="g-btn"></div></div>
-      <div class="divider">or use email</div>
-      {% endif %}
-      <div class="af" id="auth-form">
-        <input type="email" id="ae" placeholder="Email" maxlength="100" autocomplete="email">
-        <input type="password" id="ap" placeholder="Password (6+ chars)" maxlength="64" autocomplete="current-password">
-        <div class="tos-row" id="tos-row">
-          <input type="checkbox" id="tos-cb">
-          <label for="tos-cb">I agree to the <a href="/tos" target="_blank">Terms of Service</a></label>
-        </div>
-        <button class="b bp" id="a-login" style="font-size:14px;padding:10px 24px;justify-content:center">Log In</button>
-        <div class="ae" id="a-err"></div>
-        <div class="at" id="a-toggle">No account? <a id="a-switch">Sign up</a></div>
+      <div class="tos-row" id="tos-row" style="margin-bottom:14px">
+        <input type="checkbox" id="tos-cb">
+        <label for="tos-cb">I agree to the <a href="/tos" target="_blank">Terms of Service</a></label>
       </div>
+      <div class="g-wrap"><div id="g-btn"></div></div>
+      <div class="ae" id="a-err"></div>
     </div>
     <div class="shield">
       🛡 <b>Your safety matters.</b><br>
