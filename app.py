@@ -1,5 +1,5 @@
 """
-Nova — P2P anonymous chat with full legal compliance.
+Nova — P2P video chat with strangers (Omegle-style).
 
 Security layers:
   1. Google OAuth — verified identity (Google ID + email)
@@ -8,7 +8,7 @@ Security layers:
   4. Data Retention — configurable, auto-cleanup of old logs
 
 Server handles: auth, matching, WebRTC signaling, logging.
-All chat messages flow peer-to-peer via WebRTC DataChannel.
+Video/audio flows peer-to-peer via WebRTC media streams.
 """
 
 import json

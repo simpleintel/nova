@@ -1,14 +1,7 @@
 /**
- * Nova — P2P Client with Google OAuth.
- * Optimized for low-bandwidth / unstable connections.
- *
- * Resilience features:
- *   - Socket.IO auto-reconnect with backoff
- *   - WebRTC ICE restart on connection failure
- *   - Message queue during temporary disconnects
- *   - Polling fallback when WebSocket fails
- *   - Connection status indicators
- *   - Ordered + reliable DataChannel
+ * Nova — P2P Video Chat (Omegle-style).
+ * Video-only, no text. Google OAuth.
+ * Resilient for low-bandwidth connections.
  */
 (()=>{
 "use strict";
@@ -18,55 +11,70 @@ const GCID = window.__GOOGLE_CLIENT_ID__ || "";
 
 // ── Screens ─────────────────────────────────────────────────────────────────
 const A=$("A"), L=$("L"), C=$("C");
-const ml=$("ml"),mi=$("mi"),se=$("se"),sd=$("sd"),st=$("st"),
-      ti=$("ti"),ol=$("ol"),oc=$("oc"),uname=$("uname"),uavatar=$("uavatar");
+const rv=$("rv"),lv=$("lv"),vs=$("vs"),vsText=$("vs-text"),vsSub=$("vs-sub");
+const ol=$("ol"),oc=$("oc"),uname=$("uname"),uavatar=$("uavatar");
 
 let currentUser = null;
 let io_ = null;
 let pc = null;
-let dc = null;
+let localStream = null;
 let matched = false;
-let wt = null, wasT = false;
 let iceRestarts = 0;
+let peerInitiator = false;
+let camOn = true, micOn = true;
 const MAX_ICE_RESTARTS = 3;
-const msgQueue = [];       // queue messages while DC is temporarily closed
-let peerInitiator = false; // track if we initiated the peer connection
 
 function show(el){document.querySelectorAll(".s").forEach(s=>s.classList.remove("on"));el.classList.add("on")}
-function clear(){ml.innerHTML="";msgQueue.length=0}
-function scroll(){requestAnimationFrame(()=>{ml.scrollTop=ml.scrollHeight})}
-function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML}
 
-function add(txt,type){
-  const d=document.createElement("div");
-  if(type==="s"){d.className="sm";d.innerHTML="<span>"+txt+"</span>"}
-  else{d.className="mg "+(type==="y"?"y":"st");
-    d.innerHTML='<span class="lb">'+(type==="y"?"You":"Stranger")+"</span>"+esc(txt)}
-  ml.appendChild(d);scroll();
+// ── Camera ──────────────────────────────────────────────────────────────────
+async function getCamera(){
+  if(localStream) return localStream;
+  try{
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video:{width:{ideal:640},height:{ideal:480},facingMode:"user"},
+      audio:true,
+    });
+    lv.srcObject = localStream;
+    return localStream;
+  }catch(e){
+    console.error("Camera error:",e);
+    vsText.textContent="Camera access denied";
+    vsSub.textContent="Please allow camera & mic access and reload";
+    return null;
+  }
 }
 
-// ── UI State ────────────────────────────────────────────────────────────────
-function setConn(){
-  matched=true;iceRestarts=0;mi.disabled=false;se.disabled=false;mi.focus();
-  sd.className="sd c";st.textContent="Connected (P2P)";
-  // Flush any queued messages
-  flushQueue();
+function stopCamera(){
+  if(localStream){
+    localStream.getTracks().forEach(t=>t.stop());
+    localStream=null;
+    lv.srcObject=null;
+  }
 }
+
+// ── Status UI ───────────────────────────────────────────────────────────────
+function showStatus(text,sub){
+  vs.style.display="block";
+  vsText.textContent=text;
+  vsSub.textContent=sub||"";
+}
+function hideStatus(){vs.style.display="none"}
+
 function setWait(){
-  matched=false;mi.disabled=true;se.disabled=true;mi.value="";
-  ti.classList.remove("on");sd.className="sd w";st.textContent="Searching…";
+  matched=false;iceRestarts=0;
+  rv.srcObject=null;
+  showStatus("Looking for someone…","Hang tight");
   closePeer();
+}
+function setConnected(){
+  matched=true;iceRestarts=0;
+  hideStatus();
 }
 function setDC(){
-  matched=false;mi.disabled=true;se.disabled=true;
-  ti.classList.remove("on");sd.className="sd";st.textContent="Disconnected";
+  matched=false;
+  rv.srcObject=null;
   closePeer();
 }
-function setReconnecting(){
-  mi.disabled=true;se.disabled=true;
-  sd.className="sd w";st.textContent="Reconnecting…";
-}
-function autoH(){mi.style.height="auto";mi.style.height=Math.min(mi.scrollHeight,100)+"px"}
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 async function api(url, body){
@@ -78,15 +86,12 @@ async function api(url, body){
   }
 }
 
-// Check session on load
 fetch("/api/me").then(r=>r.json()).then(d=>{
   if(d.ok) enterLobby(d.user);
 }).catch(()=>{});
 
-// TOS checkbox
 const tosCb=$("tos-cb");
 
-// Google Sign-In (if configured)
 if(GCID){
   window.addEventListener("load",()=>{
     if(typeof google==="undefined"||!google.accounts) return;
@@ -113,7 +118,7 @@ $("logout").onclick=async()=>{
   await fetch("/api/logout",{method:"POST"}).catch(()=>{});
   currentUser=null;
   if(io_){io_.disconnect();io_=null}
-  closePeer();
+  stopCamera();closePeer();
   show(A);
 };
 
@@ -126,48 +131,36 @@ function enterLobby(user){
   connectSocket();
 }
 
-// ── Socket.IO (with reconnection for low internet) ──────────────────────────
+// ── Socket.IO ───────────────────────────────────────────────────────────────
 function connectSocket(){
   if(io_) return;
   io_=io({
-    transports:["websocket","polling"],   // fallback to polling on bad connections
+    transports:["websocket","polling"],
     reconnection:true,
-    reconnectionAttempts:Infinity,         // never give up
-    reconnectionDelay:1000,               // start at 1s
-    reconnectionDelayMax:10000,           // max 10s between retries
-    timeout:30000,                        // 30s connection timeout (slow networks)
-    forceNew:false,
+    reconnectionAttempts:Infinity,
+    reconnectionDelay:1000,
+    reconnectionDelayMax:10000,
+    timeout:30000,
   });
 
-  // Connection status
-  io_.on("connect",()=>{
-    console.log("Socket connected");
-  });
+  io_.on("connect",()=>console.log("Socket connected"));
   io_.on("disconnect",reason=>{
     console.log("Socket disconnected:",reason);
-    if(matched){
-      setReconnecting();
-      add("⚠ Connection unstable, reconnecting…","s");
-    }
+    if(matched) showStatus("Reconnecting…","Connection unstable");
   });
-  io_.on("reconnect",attempt=>{
-    console.log("Socket reconnected after",attempt,"attempts");
-    if(matched) add("✓ Reconnected to server","s");
-  });
-  io_.on("reconnect_attempt",attempt=>{
-    if(attempt%5===0) add("⚠ Trying to reconnect… (attempt "+attempt+")","s");
+  io_.on("reconnect",()=>{
+    if(matched) hideStatus();
   });
 
   io_.on("oc",n=>{ol.textContent=n;oc.textContent=n});
   io_.on("w",()=>{setWait()});
 
-  io_.on("m",data=>{
-    add("Matched! Establishing P2P connection…","s");
+  io_.on("m",async data=>{
+    showStatus("Matched! Connecting…","Establishing video link");
     peerInitiator=data.init;
     setupPeer(data.init);
   });
 
-  // WebRTC signaling
   io_.on("offer",async data=>{
     if(!pc)return;
     try{
@@ -175,7 +168,7 @@ function connectSocket(){
       const ans=await pc.createAnswer();
       await pc.setLocalDescription(ans);
       io_.emit("answer",pc.localDescription.toJSON());
-    }catch(e){console.warn("Offer handling error:",e)}
+    }catch(e){console.warn("Offer error:",e)}
   });
   io_.on("answer",async data=>{
     if(!pc)return;
@@ -187,11 +180,12 @@ function connectSocket(){
   });
 
   io_.on("pd",()=>{
-    setDC();add("Stranger has disconnected.","s");showFindNew();
+    setDC();
+    showStatus("Stranger left","Click Next to find someone new");
   });
 }
 
-// ── WebRTC P2P (optimized for low bandwidth) ────────────────────────────────
+// ── WebRTC ──────────────────────────────────────────────────────────────────
 const RTC_CONFIG={
   iceServers:[
     {urls:"stun:stun.l.google.com:19302"},
@@ -200,147 +194,140 @@ const RTC_CONFIG={
     {urls:"turn:openrelay.metered.ca:443",username:"openrelayproject",credential:"openrelayproject"},
     {urls:"turn:openrelay.metered.ca:443?transport=tcp",username:"openrelayproject",credential:"openrelayproject"},
   ],
-  iceCandidatePoolSize:5,        // pre-gather candidates for faster connection
-  iceTransportPolicy:"all",      // try all (direct + relay)
+  iceCandidatePoolSize:5,
 };
 
 function closePeer(){
-  if(dc){try{dc.close()}catch(_){} dc=null}
   if(pc){try{pc.close()}catch(_){} pc=null}
   iceRestarts=0;
 }
 
-function setupPeer(isInit){
+async function setupPeer(isInit){
   closePeer();
+
+  // Make sure we have camera
+  const stream = await getCamera();
+  if(!stream){
+    showStatus("Camera access required","Please allow camera & mic");
+    return;
+  }
+
   pc=new RTCPeerConnection(RTC_CONFIG);
+
+  // Add local video/audio tracks to the connection
+  stream.getTracks().forEach(t=>pc.addTrack(t,stream));
+
+  // Receive remote video
+  pc.ontrack=e=>{
+    if(e.streams&&e.streams[0]){
+      rv.srcObject=e.streams[0];
+      setConnected();
+    }
+  };
 
   pc.onicecandidate=e=>{
     if(e.candidate&&io_) io_.emit("ice",e.candidate.toJSON());
   };
 
-  // ICE connection monitoring with restart logic
   pc.oniceconnectionstatechange=()=>{
     if(!pc) return;
     const s=pc.iceConnectionState;
-    console.log("ICE state:",s);
+    console.log("ICE:",s);
 
     if(s==="disconnected"){
-      // Temporary disconnect — wait a bit, then try ICE restart
-      st.textContent="Connection unstable…";
-      sd.className="sd w";
+      showStatus("Connection unstable…","Trying to reconnect");
       setTimeout(()=>{
         if(pc&&pc.iceConnectionState==="disconnected"&&iceRestarts<MAX_ICE_RESTARTS){
           iceRestarts++;
-          add("⚠ Reconnecting to peer… (attempt "+iceRestarts+")","s");
           tryIceRestart();
         }
       },3000);
     } else if(s==="failed"){
       if(iceRestarts<MAX_ICE_RESTARTS){
         iceRestarts++;
-        add("⚠ Connection failed, retrying… (attempt "+iceRestarts+")","s");
+        showStatus("Reconnecting… ("+iceRestarts+"/"+MAX_ICE_RESTARTS+")","");
         tryIceRestart();
       } else {
-        setDC();add("P2P connection lost after "+MAX_ICE_RESTARTS+" retries.","s");showFindNew();
+        setDC();
+        showStatus("Connection lost","Click Next to find someone new");
       }
     } else if(s==="connected"||s==="completed"){
-      sd.className="sd c";
-      st.textContent="Connected (P2P)";
-      if(iceRestarts>0) add("✓ Reconnected to peer!","s");
+      setConnected();
     }
   };
 
   pc.onconnectionstatechange=()=>{
     if(!pc) return;
     if(pc.connectionState==="failed"&&iceRestarts>=MAX_ICE_RESTARTS){
-      setDC();add("P2P connection lost.","s");showFindNew();
+      setDC();
+      showStatus("Connection lost","Click Next to find someone new");
     }
   };
 
   if(isInit){
-    // Ordered + reliable DataChannel for text (works better on bad connections)
-    dc=pc.createDataChannel("chat",{ordered:true});
-    bindDC(dc);
-    pc.createOffer().then(o=>pc.setLocalDescription(o))
-      .then(()=>io_.emit("offer",pc.localDescription.toJSON()))
-      .catch(e=>console.warn("Offer creation error:",e));
-  }else{
-    pc.ondatachannel=e=>{dc=e.channel;bindDC(dc)};
+    try{
+      const offer=await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      io_.emit("offer",pc.localDescription.toJSON());
+    }catch(e){console.warn("Offer error:",e)}
   }
 }
 
 function tryIceRestart(){
   if(!pc||!io_) return;
-  try{
-    if(peerInitiator){
-      pc.createOffer({iceRestart:true}).then(o=>pc.setLocalDescription(o))
-        .then(()=>io_.emit("offer",pc.localDescription.toJSON()))
-        .catch(e=>console.warn("ICE restart error:",e));
-    }
-    // Non-initiator waits for the new offer
-  }catch(e){console.warn("ICE restart failed:",e)}
-}
-
-function bindDC(ch){
-  ch.onopen=()=>{setConn();add("Connected peer-to-peer! Say hi!","s")};
-  ch.onclose=()=>{
-    if(matched&&iceRestarts>=MAX_ICE_RESTARTS){
-      setDC();add("Stranger has disconnected.","s");showFindNew();
-    }
-    // If iceRestarts < max, the ICE restart logic will handle reconnection
-  };
-  ch.onmessage=e=>{
-    try{
-      const d=JSON.parse(e.data);
-      if(d.t!==undefined){
-        if(d.t){ti.classList.add("on");scroll()}else ti.classList.remove("on");
-      }else if(d.m){add(d.m,"st");ti.classList.remove("on")}
-    }catch(_){}
-  };
-}
-
-// ── P2P messaging with queue ────────────────────────────────────────────────
-function dcSend(obj){
-  if(dc&&dc.readyState==="open"){
-    dc.send(JSON.stringify(obj));
-  } else if(matched){
-    // Queue message for when connection recovers
-    if(obj.m) msgQueue.push(obj);
+  if(peerInitiator){
+    pc.createOffer({iceRestart:true}).then(o=>pc.setLocalDescription(o))
+      .then(()=>io_.emit("offer",pc.localDescription.toJSON()))
+      .catch(e=>console.warn("ICE restart error:",e));
   }
 }
 
-function flushQueue(){
-  while(msgQueue.length>0&&dc&&dc.readyState==="open"){
-    dc.send(JSON.stringify(msgQueue.shift()));
+// ── Controls ────────────────────────────────────────────────────────────────
+const camBtn=$("cam-tog"), micBtn=$("mic-tog");
+
+camBtn.onclick=()=>{
+  if(!localStream) return;
+  camOn=!camOn;
+  localStream.getVideoTracks().forEach(t=>{t.enabled=camOn});
+  camBtn.classList.toggle("off",!camOn);
+  camBtn.textContent=camOn?"📷":"🚫";
+};
+
+micBtn.onclick=()=>{
+  if(!localStream) return;
+  micOn=!micOn;
+  localStream.getAudioTracks().forEach(t=>{t.enabled=micOn});
+  micBtn.classList.toggle("off",!micOn);
+  micBtn.textContent=micOn?"🎤":"🔇";
+};
+
+// Start chat
+$("go").onclick=async()=>{
+  show(C);
+  showStatus("Starting camera…","");
+  const stream = await getCamera();
+  if(!stream){
+    showStatus("Camera access required","Please allow camera & mic and try again");
+    return;
   }
-}
+  showStatus("Looking for someone…","Hang tight");
+  io_.emit("q");
+};
 
-function typing(){
-  if(!matched)return;
-  if(!wasT){wasT=true;dcSend({t:1})}
-  clearTimeout(wt);
-  wt=setTimeout(()=>{wasT=false;dcSend({t:0})},1200);
-}
+// Next
+$("sk").onclick=()=>{
+  setWait();
+  showStatus("Looking for someone…","Hang tight");
+  io_.emit("s");
+};
 
-function send(){
-  const t=mi.value.trim();if(!t||!matched)return;
-  dcSend({m:t});add(t,"y");mi.value="";autoH();
-  clearTimeout(wt);if(wasT){wasT=false;dcSend({t:0})}
-}
-
-function showFindNew(){
-  const b=document.createElement("div");b.className="sm";
-  b.innerHTML='<button class="b bf" id="fn">Find New Stranger</button>';
-  ml.appendChild(b);scroll();
-  $("fn").onclick=()=>{clear();setWait();add("Looking for a new stranger…","s");io_.emit("q")};
-}
-
-// ── UI Events ───────────────────────────────────────────────────────────────
-$("go").onclick=()=>{show(C);clear();setWait();add("Looking for a stranger…","s");io_.emit("q")};
-se.onclick=send;
-mi.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}};
-mi.oninput=()=>{autoH();typing()};
-$("sk").onclick=()=>{clear();setWait();add("Looking for a new stranger…","s");io_.emit("s")};
-$("dc").onclick=()=>{io_.emit("s");setDC();clear();show(L)};
+// Disconnect — back to lobby
+$("dc").onclick=()=>{
+  io_.emit("s");
+  setDC();
+  stopCamera();
+  rv.srcObject=null;
+  show(L);
+};
 
 })();
