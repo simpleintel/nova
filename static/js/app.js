@@ -384,12 +384,18 @@ function tryIceRestart(){
 // ── Controls ────────────────────────────────────────────────────────────────
 const camBtn=$("cam-tog"), micBtn=$("mic-tog");
 
+const svgCamOn='<svg viewBox="0 0 24 24"><path d="M15 8v8H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M21 6l-6 4.5v3L21 18V6z"/></svg>';
+const svgCamOff='<svg viewBox="0 0 24 24"><path d="M15 8v8H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M21 6l-6 4.5v3L21 18V6z"/><line x1="2" y1="2" x2="22" y2="22" style="stroke-width:2.5"/></svg>';
+const svgMicOn='<svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
+const svgMicOff='<svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="2" x2="22" y2="22" style="stroke-width:2.5"/></svg>';
+
 camBtn.onclick=()=>{
   if(!localStream) return;
   camOn=!camOn;
   localStream.getVideoTracks().forEach(t=>{t.enabled=camOn});
   camBtn.classList.toggle("off",!camOn);
-  camBtn.textContent=camOn?"📷":"🚫";
+  camBtn.classList.toggle("white",camOn);
+  camBtn.innerHTML=camOn?svgCamOn:svgCamOff;
 };
 
 micBtn.onclick=()=>{
@@ -397,7 +403,8 @@ micBtn.onclick=()=>{
   micOn=!micOn;
   localStream.getAudioTracks().forEach(t=>{t.enabled=micOn});
   micBtn.classList.toggle("off",!micOn);
-  micBtn.textContent=micOn?"🎤":"🔇";
+  micBtn.classList.toggle("white",micOn);
+  micBtn.innerHTML=micOn?svgMicOn:svgMicOff;
 };
 
 // Start chat
