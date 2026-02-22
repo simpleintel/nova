@@ -35,8 +35,8 @@ app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "talktome-dev-key-change
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    ping_interval=25,
-    ping_timeout=60,
+    ping_interval=30,
+    ping_timeout=120,       # 2 min timeout for slow connections
     max_http_buffer_size=16384,
 )
 
