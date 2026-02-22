@@ -273,9 +273,16 @@ function connectSocket(){
   });
 
   io_.on("pd",()=>{
-    dbg("Partner disconnected");
+    dbg("Partner disconnected — auto re-queuing");
     setDC();
-    showStatus("Stranger left","Click Next to find someone new");
+    showStatus("Stranger left","Finding someone new…");
+    // Auto re-queue immediately
+    setTimeout(()=>{
+      if(io_&&io_.connected){
+        dbg("Re-joining queue…");
+        io_.emit("q");
+      }
+    },500);
   });
 }
 
@@ -354,8 +361,10 @@ async function setupPeer(isInit){
         showStatus("Reconnecting… ("+iceRestarts+"/"+MAX_ICE_RESTARTS+")","");
         tryIceRestart();
       } else {
+        dbg("Connection lost — auto re-queuing");
         setDC();
-        showStatus("Connection lost","Click Next to find someone new");
+        showStatus("Connection lost","Finding someone new…");
+        setTimeout(()=>{ if(io_&&io_.connected) io_.emit("s"); },500);
       }
     } else if(s==="connected"||s==="completed"){
       dbg("Video connected!");
@@ -367,8 +376,10 @@ async function setupPeer(isInit){
     if(!pc) return;
     dbg("Connection state: "+pc.connectionState);
     if(pc.connectionState==="failed"&&iceRestarts>=MAX_ICE_RESTARTS){
+      dbg("Peer connection failed — auto re-queuing");
       setDC();
-      showStatus("Connection lost","Click Next to find someone new");
+      showStatus("Connection lost","Finding someone new…");
+      setTimeout(()=>{ if(io_&&io_.connected) io_.emit("s"); },500);
     }
   };
 

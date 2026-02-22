@@ -187,7 +187,7 @@ def _remove_from_queue(sid: str):
         pass
 
 
-def _leave_partner(sid: str):
+def _leave_partner(sid: str, auto_requeue=True):
     partner = partners.pop(sid, None)
     if partner:
         partners.pop(partner, None)
@@ -197,6 +197,11 @@ def _leave_partner(sid: str):
         if uid:
             log_action(uid, "chat_end", partner_user_id=p_uid, ip=get_client_ip())
         emit("pd", to=partner)
+        # Auto re-queue the remaining partner so they find someone new immediately
+        if auto_requeue and partner in online and partner not in waiting_set:
+            waiting_queue.append(partner)
+            waiting_set.add(partner)
+            emit("w", to=partner)
 
 
 def _try_match(sid: str):
@@ -472,7 +477,7 @@ def on_disconnect():
     uid = sid_to_uid.pop(sid, None)
     online.discard(sid)
     _remove_from_queue(sid)
-    _leave_partner(sid)
+    _leave_partner(sid, auto_requeue=True)  # re-queue the partner who's still online
     if uid:
         log_action(uid, "disconnect", ip=get_client_ip())
     _broadcast_online()
