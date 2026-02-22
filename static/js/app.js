@@ -66,6 +66,9 @@ fetch("/api/me").then(r=>r.json()).then(d=>{
   if(d.ok) enterLobby(d.user);
 });
 
+// TOS checkbox
+const tosCb=$("tos-cb");
+
 // Google Sign-In (if configured)
 if(GCID){
   // Wait for GSI library to load
@@ -75,7 +78,11 @@ if(GCID){
       client_id: GCID,
       callback: async resp=>{
         $("a-err").textContent="";
-        const d = await api("/api/auth/google",{credential:resp.credential});
+        if(!tosCb.checked){
+          $("a-err").textContent="You must accept the Terms of Service.";
+          return;
+        }
+        const d = await api("/api/auth/google",{credential:resp.credential,tos_accepted:true});
         if(d.ok) enterLobby(d.user);
         else $("a-err").textContent=d.err||"Google login failed";
       },
@@ -101,7 +108,11 @@ if(switchEl){
 loginBtn.onclick=async()=>{
   const email=$("ae").value.trim(), pw=$("ap").value;
   $("a-err").textContent="";
-  const d=await api("/api/auth/email",{action:isSignup?"signup":"login",email,password:pw});
+  if(!tosCb.checked){
+    $("a-err").textContent="You must accept the Terms of Service.";
+    return;
+  }
+  const d=await api("/api/auth/email",{action:isSignup?"signup":"login",email,password:pw,tos_accepted:true});
   if(d.ok) enterLobby(d.user);
   else $("a-err").textContent=d.err||"Auth failed";
 };

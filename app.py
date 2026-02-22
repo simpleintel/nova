@@ -54,16 +54,19 @@ def init_db():
     with get_db() as db:
         db.executescript("""
             CREATE TABLE IF NOT EXISTS users (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                google_id   TEXT    UNIQUE,
-                email       TEXT    NOT NULL,
-                name        TEXT,
-                avatar      TEXT,
-                username    TEXT    UNIQUE,
-                password    TEXT,
-                auth_method TEXT    NOT NULL DEFAULT 'google',
-                created     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                last_login  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                google_id       TEXT    UNIQUE,
+                email           TEXT    NOT NULL,
+                name            TEXT,
+                avatar          TEXT,
+                username        TEXT    UNIQUE,
+                password        TEXT,
+                auth_method     TEXT    NOT NULL DEFAULT 'google',
+                tos_accepted_at TIMESTAMP,
+                tos_accepted_ip TEXT,
+                tos_version     TEXT,
+                created         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_login      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
             CREATE TABLE IF NOT EXISTS logs (
@@ -111,8 +114,22 @@ def log_action(user_id, action, partner_user_id=None, ip=None, user_agent=None, 
         pass  # logging should never crash the app
 
 
+TOS_VERSION = "1.0"  # bump this when TOS changes — users must re-accept
+
 init_db()
 cleanup_old_logs()
+
+# Migrate: add tos columns if missing (safe for existing DBs)
+try:
+    with get_db() as db:
+        cols = [r[1] for r in db.execute("PRAGMA table_info(users)").fetchall()]
+        if "tos_accepted_at" not in cols:
+            db.execute("ALTER TABLE users ADD COLUMN tos_accepted_at TIMESTAMP")
+            db.execute("ALTER TABLE users ADD COLUMN tos_accepted_ip TEXT")
+            db.execute("ALTER TABLE users ADD COLUMN tos_version TEXT")
+            db.commit()
+except Exception:
+    pass
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -204,7 +221,12 @@ def _try_match(sid: str):
 # ── Auth Routes ──────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
-    return render_template("index.html", google_client_id=GOOGLE_CLIENT_ID, retention_days=RETENTION_DAYS)
+    return render_template("index.html", google_client_id=GOOGLE_CLIENT_ID, retention_days=RETENTION_DAYS, tos_version=TOS_VERSION)
+
+
+@app.route("/tos")
+def tos_page():
+    return render_template("tos.html")
 
 
 @app.route("/api/auth/google", methods=["POST"])
@@ -217,6 +239,9 @@ def auth_google():
     token = data.get("credential", "")
     if not token:
         return jsonify({"ok": False, "err": "No credential provided."}), 400
+
+    if not data.get("tos_accepted"):
+        return jsonify({"ok": False, "err": "You must accept the Terms of Service."}), 400
 
     info = verify_google_token(token)
     if not info:
@@ -234,18 +259,20 @@ def auth_google():
     row = db.execute("SELECT * FROM users WHERE google_id = ?", (google_id,)).fetchone()
 
     if row:
-        # Existing user — update last login
+        # Existing user — update last login + TOS acceptance
         db.execute(
-            "UPDATE users SET last_login = CURRENT_TIMESTAMP, name = ?, avatar = ?, email = ? WHERE id = ?",
-            (name, avatar, email, row["id"]),
+            "UPDATE users SET last_login = CURRENT_TIMESTAMP, name = ?, avatar = ?, email = ?, "
+            "tos_accepted_at = CURRENT_TIMESTAMP, tos_accepted_ip = ?, tos_version = ? WHERE id = ?",
+            (name, avatar, email, get_client_ip(), TOS_VERSION, row["id"]),
         )
         db.commit()
         uid = row["id"]
     else:
         # New user
         cur = db.execute(
-            "INSERT INTO users (google_id, email, name, avatar, auth_method) VALUES (?, ?, ?, ?, 'google')",
-            (google_id, email, name, avatar),
+            "INSERT INTO users (google_id, email, name, avatar, auth_method, tos_accepted_at, tos_accepted_ip, tos_version) "
+            "VALUES (?, ?, ?, ?, 'google', CURRENT_TIMESTAMP, ?, ?)",
+            (google_id, email, name, avatar, get_client_ip(), TOS_VERSION),
         )
         db.commit()
         uid = cur.lastrowid
@@ -283,11 +310,14 @@ def auth_email():
             return jsonify({"ok": False, "err": "Valid email required."}), 400
         if len(password) < 6:
             return jsonify({"ok": False, "err": "Password must be 6+ characters."}), 400
+        if not data.get("tos_accepted"):
+            return jsonify({"ok": False, "err": "You must accept the Terms of Service."}), 400
         try:
             with get_db() as db:
                 cur = db.execute(
-                    "INSERT INTO users (email, password, auth_method, username) VALUES (?, ?, 'email', ?)",
-                    (email, generate_password_hash(password), email),
+                    "INSERT INTO users (email, password, auth_method, username, tos_accepted_at, tos_accepted_ip, tos_version) "
+                    "VALUES (?, ?, 'email', ?, CURRENT_TIMESTAMP, ?, ?)",
+                    (email, generate_password_hash(password), email, get_client_ip(), TOS_VERSION),
                 )
                 db.commit()
                 uid = cur.lastrowid
@@ -299,7 +329,8 @@ def auth_email():
         session["user_email"] = email
         session["user_avatar"] = ""
 
-        log_action(uid, "signup", ip=get_client_ip(), user_agent=get_user_agent())
+        log_action(uid, "signup", ip=get_client_ip(), user_agent=get_user_agent(),
+                   details=f"tos_v{TOS_VERSION}")
         return jsonify({"ok": True, "user": {"name": session["user_name"], "email": email, "avatar": ""}})
 
     else:  # login
