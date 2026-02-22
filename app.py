@@ -458,6 +458,94 @@ def admin_stats():
     })
 
 
+@app.route("/api/admin/users")
+def admin_users():
+    """List all users with pagination and search."""
+    if not is_admin():
+        return jsonify({"error": "Unauthorized"}), 403
+
+    q = request.args.get("q", "").strip()
+    page = max(1, int(request.args.get("page", 1)))
+    per_page = 50
+    offset = (page - 1) * per_page
+
+    db = get_db()
+
+    if q:
+        like = f"%{q}%"
+        total = db.execute(
+            "SELECT COUNT(*) FROM users WHERE email LIKE ? OR name LIKE ? OR google_id LIKE ?",
+            (like, like, like),
+        ).fetchone()[0]
+        rows = db.execute(
+            "SELECT id, email, name, avatar, auth_method, created, last_login FROM users "
+            "WHERE email LIKE ? OR name LIKE ? OR google_id LIKE ? "
+            "ORDER BY created DESC LIMIT ? OFFSET ?",
+            (like, like, like, per_page, offset),
+        ).fetchall()
+    else:
+        total = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+        rows = db.execute(
+            "SELECT id, email, name, avatar, auth_method, created, last_login FROM users "
+            "ORDER BY created DESC LIMIT ? OFFSET ?",
+            (per_page, offset),
+        ).fetchall()
+
+    db.close()
+
+    users = [
+        {
+            "id": r["id"],
+            "email": r["email"],
+            "name": r["name"] or "",
+            "avatar": r["avatar"] or "",
+            "auth": r["auth_method"],
+            "created": r["created"],
+            "last_login": r["last_login"],
+        }
+        for r in rows
+    ]
+
+    return jsonify({"users": users, "total": total, "page": page, "per_page": per_page})
+
+
+@app.route("/api/admin/users/<int:user_id>", methods=["DELETE"])
+def admin_delete_user(user_id):
+    """Delete a user and their logs."""
+    if not is_admin():
+        return jsonify({"error": "Unauthorized"}), 403
+
+    db = get_db()
+    user = db.execute("SELECT email FROM users WHERE id = ?", (user_id,)).fetchone()
+    if not user:
+        db.close()
+        return jsonify({"error": "User not found"}), 404
+
+    # Don't allow deleting admin accounts
+    if user["email"].lower() in ADMIN_EMAILS:
+        db.close()
+        return jsonify({"error": "Cannot delete admin accounts"}), 403
+
+    # Disconnect user if online
+    for sid, uid in list(sid_to_uid.items()):
+        if uid == user_id:
+            _leave_partner(sid, auto_requeue=False)
+            _remove_from_queue(sid)
+            online.discard(sid)
+            sid_to_uid.pop(sid, None)
+            socketio.emit("force_logout", to=sid)
+
+    db.execute("DELETE FROM logs WHERE user_id = ?", (user_id,))
+    db.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    db.commit()
+    db.close()
+
+    log_action(session.get("user_id"), "admin_delete_user", ip=get_client_ip(),
+               details=f"deleted user {user_id} ({user['email']})")
+
+    return jsonify({"ok": True})
+
+
 # ── Socket Events ────────────────────────────────────────────────────────────
 @socketio.on("connect")
 def on_connect():

@@ -194,6 +194,13 @@ function connectSocket(){
   io_.on("disconnect",reason=>{
     if(matched) showStatus("Reconnecting…","Connection unstable");
   });
+  io_.on("force_logout",()=>{
+    currentUser=null;
+    io_.disconnect();io_=null;
+    stopCamera();closePeer();
+    show(A);
+    alert("Your account has been removed by an admin.");
+  });
   io_.on("reconnect",()=>{
     if(matched) hideStatus();
   });
