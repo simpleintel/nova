@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova — Admin Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Courier New',Courier,monospace;background:#0a0a0a;color:#e0e0e0;padding:20px}
+h1{font-size:1.6rem;margin-bottom:4px;color:#fff}
+.sub{color:#888;font-size:.85rem;margin-bottom:24px}
+
+/* Stats grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:28px}
+.card{background:#161616;border:1px solid #2a2a2a;border-radius:8px;padding:16px;text-align:center}
+.card .num{font-size:2rem;font-weight:bold;color:#4ade80}
+.card .label{font-size:.75rem;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+.card.warn .num{color:#facc15}
+.card.info .num{color:#60a5fa}
+.card.purple .num{color:#c084fc}
+
+/* Live dot */
+.live{display:inline-block;width:8px;height:8px;background:#4ade80;border-radius:50%;margin-right:6px;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Table */
+.table-wrap{overflow-x:auto;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th{text-align:left;padding:8px 10px;border-bottom:2px solid #333;color:#888;text-transform:uppercase;font-size:.7rem;letter-spacing:.5px}
+td{padding:6px 10px;border-bottom:1px solid #1e1e1e}
+tr:hover td{background:#1a1a1a}
+
+/* Action badges */
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:bold}
+.badge-login{background:#164e63;color:#22d3ee}
+.badge-signup{background:#14532d;color:#4ade80}
+.badge-connect{background:#1e3a5f;color:#60a5fa}
+.badge-disconnect{background:#44403c;color:#a8a29e}
+.badge-match{background:#4a1d96;color:#c084fc}
+.badge-skip{background:#713f12;color:#fbbf24}
+.badge-queue{background:#1e293b;color:#94a3b8}
+.badge-logout{background:#3b0764;color:#d8b4fe}
+.badge-chat_end{background:#4c1d19;color:#fca5a5}
+
+.refresh-info{color:#555;font-size:.75rem;margin-top:16px;text-align:center}
+</style>
+</head>
+<body>
+
+<h1>📊 Nova Admin Dashboard</h1>
+<p class="sub"><span class="live"></span>Live — auto-refreshes every 3 seconds</p>
+
+<div class="grid">
+  <div class="card"><div class="num" id="s-online">—</div><div class="label">Online Now</div></div>
+  <div class="card warn"><div class="num" id="s-queue">—</div><div class="label">In Queue</div></div>
+  <div class="card purple"><div class="num" id="s-chat">—</div><div class="label">Active Chats</div></div>
+  <div class="card info"><div class="num" id="s-total">—</div><div class="label">Total Users</div></div>
+  <div class="card info"><div class="num" id="s-google">—</div><div class="label">Google Users</div></div>
+  <div class="card info"><div class="num" id="s-email">—</div><div class="label">Email Users</div></div>
+  <div class="card warn"><div class="num" id="s-signups">—</div><div class="label">Signups (24h)</div></div>
+  <div class="card"><div class="num" id="s-ips">—</div><div class="label">Unique IPs (24h)</div></div>
+</div>
+
+<h2 style="font-size:1.1rem;margin-bottom:8px">Recent Activity</h2>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Time</th><th>Action</th><th>Email</th><th>Auth</th><th>IP</th><th>Details</th></tr>
+    </thead>
+    <tbody id="log-body">
+      <tr><td colspan="6" style="text-align:center;color:#555">Loading…</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p class="refresh-info">Last updated: <span id="last-update">—</span></p>
+
+<script>
+// Admin auth is session-based — no key needed
+
+const badgeClass = {
+  login: "badge-login", signup: "badge-signup", connect: "badge-connect",
+  disconnect: "badge-disconnect", match: "badge-match", skip: "badge-skip",
+  queue: "badge-queue", logout: "badge-logout", chat_end: "badge-chat_end",
+};
+
+function $(id) { return document.getElementById(id); }
+
+function escHtml(s) {
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+async function refresh() {
+  try {
+    const r = await fetch("/api/admin/stats");
+    if (!r.ok) { console.error("Admin API error", r.status); return; }
+    const d = await r.json();
+
+    $("s-online").textContent = d.online;
+    $("s-queue").textContent = d.in_queue;
+    $("s-chat").textContent = d.in_chat;
+    $("s-total").textContent = d.total_users;
+    $("s-google").textContent = d.google_users;
+    $("s-email").textContent = d.email_users;
+    $("s-signups").textContent = d.signups_24h;
+    $("s-ips").textContent = d.unique_ips_24h;
+
+    const tbody = $("log-body");
+    if (!d.recent_logs.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#555">No activity yet</td></tr>';
+    } else {
+      tbody.innerHTML = d.recent_logs.map(l => {
+        const cls = badgeClass[l.action] || "";
+        const t = l.time ? l.time.replace("T", " ").slice(0, 19) : "—";
+        return `<tr>
+          <td>${escHtml(t)}</td>
+          <td><span class="badge ${cls}">${escHtml(l.action)}</span></td>
+          <td>${escHtml(l.email)}</td>
+          <td>${escHtml(l.auth)}</td>
+          <td>${escHtml(l.ip || "—")}</td>
+          <td>${escHtml(l.details)}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    $("last-update").textContent = new Date().toLocaleTimeString();
+  } catch (e) {
+    console.error("Refresh failed:", e);
+  }
+}
+
+refresh();
+setInterval(refresh, 3000);
+</script>
+</body>
+</html>

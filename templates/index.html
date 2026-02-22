@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nova</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#fff;--bg2:#f5f5f5;--bg3:#eee;--br:#ddd;
+  --tx:#222;--tx2:#777;--ac:#4a3fc0;--gn:#1a9;--rd:#d44;--yl:#c90
+}
+html,body{height:100%;overflow:hidden}
+body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:var(--bg);color:var(--tx)}
+
+.s{display:none;height:100%;width:100%}.s.on{display:flex}
+
+/* auth */
+#A{align-items:center;justify-content:center;text-align:center}
+#A h1{font-size:2.4rem;font-weight:800;margin-bottom:.2rem}
+#A h1 b{color:var(--ac)}
+#A .tag{color:var(--tx2);margin-bottom:1.6rem}
+.auth-box{width:300px;margin:0 auto}
+.g-wrap{margin-bottom:14px;display:flex;justify-content:center}
+.divider{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--tx2);font-size:12px}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--br)}
+.af{display:flex;flex-direction:column;gap:10px}
+.af input{font:inherit;font-size:14px;padding:10px 14px;border:1px solid var(--br);border-radius:10px;outline:none;background:var(--bg2);color:var(--tx)}
+.af input:focus{border-color:var(--ac)}
+.af .b{justify-content:center}
+.ae{color:var(--rd);font-size:13px;min-height:18px;margin-top:4px}
+.at{font-size:13px;color:var(--tx2);margin-top:10px}
+.at a{color:var(--ac);cursor:pointer;text-decoration:underline}
+.shield{margin-top:1.5rem;font-size:11px;color:var(--tx2);opacity:.7;line-height:1.6}
+.shield b{color:var(--tx)}
+
+/* landing */
+#L{align-items:center;justify-content:center;text-align:center}
+#L h1{font-size:2.4rem;font-weight:800;margin-bottom:.3rem}
+#L h1 b{color:var(--ac)}
+#L .tag{color:var(--tx2);margin-bottom:1.4rem}
+.ob{display:inline-flex;align-items:center;gap:6px;background:#1a91;border:1px solid #1a93;border-radius:99px;padding:4px 14px;font-size:13px;color:var(--gn);margin-bottom:1.4rem}
+.ob .d{width:7px;height:7px;border-radius:50%;background:var(--gn)}
+.ob.sm{padding:3px 10px;font-size:12px;margin:0}
+.ub{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;color:var(--tx2);margin-bottom:1.2rem}
+.ub img{width:24px;height:24px;border-radius:50%}
+.ub strong{color:var(--tx)}
+
+.b{font:inherit;font-weight:600;font-size:14px;border:none;border-radius:10px;cursor:pointer;padding:8px 18px;display:inline-flex;align-items:center;gap:6px}
+.bp{background:var(--ac);color:#fff;font-size:16px;padding:12px 32px;border-radius:14px}
+.bp:hover{opacity:.9}
+.bs{background:#fff;color:var(--yl);border:1px solid #c903}
+.bs:hover{background:#c901}
+.bd{background:#fff;color:var(--rd);border:1px solid #d443}
+.bd:hover{background:#d441}
+.bf{background:var(--ac);color:#fff;margin-top:6px}
+.bl{background:none;color:var(--tx2);font-size:12px;padding:4px 10px;border:1px solid var(--br);border-radius:6px;cursor:pointer}
+.bl:hover{background:var(--bg2)}
+.sub{margin-top:1rem;font-size:12px;color:var(--tx2);opacity:.6}
+.p2p{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--gn);background:#1a91;border:1px solid #1a93;border-radius:6px;padding:2px 8px;margin-left:8px;font-weight:600}
+
+/* chat */
+#C{flex-direction:column}
+.hd{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--br);flex-shrink:0}
+.hd .lo{font-weight:700;font-size:14px}
+.hd .lo b{color:var(--ac)}
+.hd .ct{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--tx2)}
+.sd{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:var(--br)}
+.sd.w{background:var(--yl)}.sd.c{background:var(--gn)}
+
+.ml{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:6px}
+.ml::-webkit-scrollbar{width:5px}.ml::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}
+.sm{text-align:center;font-size:13px;color:var(--tx2);padding:4px}
+.mg{max-width:72%;padding:8px 12px;border-radius:14px;font-size:14px;line-height:1.5;word-wrap:break-word}
+.mg.y{align-self:flex-end;background:var(--ac);color:#fff;border-bottom-right-radius:3px}
+.mg.st{align-self:flex-start;background:var(--bg3);border:1px solid var(--br);border-bottom-left-radius:3px}
+.mg .lb{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;display:block}
+.mg.y .lb{color:#fffc}.mg.st .lb{color:var(--ac)}
+
+.ti{display:none;align-items:center;gap:6px;padding:3px 16px;font-size:12px;color:var(--tx2)}
+.ti.on{display:flex}
+.td{display:flex;gap:3px}
+.td span{width:5px;height:5px;background:var(--tx2);border-radius:50%;animation:tb .6s infinite alternate}
+.td span:nth-child(2){animation-delay:.15s}.td span:nth-child(3){animation-delay:.3s}
+@keyframes tb{from{opacity:.3}to{opacity:1}}
+
+.ia{padding:10px 12px;background:var(--bg2);border-top:1px solid var(--br);flex-shrink:0}
+.iw{display:flex;align-items:flex-end;gap:6px;background:var(--bg3);border:1px solid var(--br);border-radius:14px;padding:6px 8px 6px 14px}
+.iw:focus-within{border-color:var(--ac)}
+#mi{flex:1;background:0;border:0;outline:0;color:var(--tx);font:inherit;font-size:14px;resize:none;max-height:100px;line-height:1.5}
+#mi::placeholder{color:var(--tx2)}#mi:disabled{opacity:.4}
+.se{width:34px;height:34px;border-radius:50%;border:none;background:var(--ac);color:#fff;cursor:pointer;flex-shrink:0;font-size:16px;display:flex;align-items:center;justify-content:center}
+.se:disabled{opacity:.3;cursor:not-allowed}
+.ca{display:flex;gap:6px;margin-top:8px;justify-content:center}
+
+@media(max-width:600px){
+  #A h1,#L h1{font-size:1.8rem}.mg{max-width:85%}.hd .ct{display:none}.auth-box{width:260px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ Auth Screen ═══ -->
+<div id="A" class="s on">
+  <div>
+    <h1>No<b>va</b></h1>
+    <p class="tag">Peer-to-peer chat with strangers</p>
+    <div class="auth-box">
+      {% if google_client_id %}
+      <!-- Google Sign-In button rendered here -->
+      <div class="g-wrap"><div id="g-btn"></div></div>
+      <div class="divider">or use email</div>
+      {% endif %}
+      <div class="af" id="auth-form">
+        <input type="email" id="ae" placeholder="Email" maxlength="100" autocomplete="email">
+        <input type="password" id="ap" placeholder="Password (6+ chars)" maxlength="64" autocomplete="current-password">
+        <button class="b bp" id="a-login" style="font-size:14px;padding:10px 24px;justify-content:center">Log In</button>
+        <div class="ae" id="a-err"></div>
+        <div class="at" id="a-toggle">No account? <a id="a-switch">Sign up</a></div>
+      </div>
+    </div>
+    <div class="shield">
+      🛡 <b>Your safety matters.</b><br>
+      All connections are logged for legal compliance.<br>
+      IP addresses and session data are retained for {{ retention_days }} days.
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Landing / Lobby ═══ -->
+<div id="L" class="s">
+  <div>
+    <h1>No<b>va</b></h1>
+    <p class="tag">Meet strangers. Peer-to-peer.</p>
+    <div class="ub">
+      <img id="uavatar" src="" alt="" style="display:none">
+      <span>Logged in as <strong id="uname"></strong></span>
+      <button class="bl" id="logout">log out</button>
+    </div>
+    <div class="ob"><span class="d"></span><span id="ol">0</span> online</div><br>
+    <button class="b bp" id="go">Start Chatting</button>
+    <p class="sub">Messages go directly between browsers<br>The server only matches and logs connections</p>
+  </div>
+</div>
+
+<!-- ═══ Chat ═══ -->
+<div id="C" class="s">
+  <header class="hd">
+    <span class="lo">No<b>va</b> <span class="p2p">P2P</span></span>
+    <span class="ct"><span class="sd w" id="sd"></span><span id="st">Looking for a stranger…</span></span>
+    <div class="ob sm"><span class="d"></span><span id="oc">0</span> online</div>
+  </header>
+  <div class="ml" id="ml"></div>
+  <div class="ti" id="ti"><div class="td"><span></span><span></span><span></span></div><span>Stranger is typing…</span></div>
+  <div class="ia">
+    <div class="iw">
+      <textarea id="mi" placeholder="Type a message…" rows="1" maxlength="2000" disabled></textarea>
+      <button class="se" id="se" disabled>➤</button>
+    </div>
+    <div class="ca">
+      <button class="b bs" id="sk">⏭ Next</button>
+      <button class="b bd" id="dc">✕ Disconnect</button>
+    </div>
+  </div>
+</div>
+
+{% if google_client_id %}
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+{% endif %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>window.__GOOGLE_CLIENT_ID__="{{ google_client_id }}";</script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>
