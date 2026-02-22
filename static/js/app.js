@@ -10,9 +10,10 @@ const $=id=>document.getElementById(id);
 const GCID = window.__GOOGLE_CLIENT_ID__ || "";
 
 // ── Screens ─────────────────────────────────────────────────────────────────
-const A=$("A"), L=$("L"), C=$("C");
+const A=$("A"), N=$("N"), L=$("L"), C=$("C");
 const rv=$("rv"),lv=$("lv"),vs=$("vs"),vsText=$("vs-text"),vsSub=$("vs-sub");
 const ol=$("ol"),oc=$("oc"),uname=$("uname"),uavatar=$("uavatar");
+const partnerNick=$("partner-nick");
 
 let currentUser = null;
 let io_ = null;
@@ -120,6 +121,7 @@ function setConnected(){
 function setDC(){
   matched=false;
   rv.srcObject=null;
+  partnerNick.style.display="none";
   closePeer();
 }
 
@@ -171,11 +173,36 @@ $("logout").onclick=async()=>{
 
 function enterLobby(user){
   currentUser=user;
-  uname.textContent=user.name||user.email;
+  // If no nickname set, prompt for one
+  if(!user.nickname){
+    show(N);
+    $("nick-in").value="";
+    $("nick-in").focus();
+    return;
+  }
+  uname.textContent=user.nickname;
   if(user.avatar){uavatar.src=user.avatar;uavatar.style.display="inline"}
   else{uavatar.style.display="none"}
   show(L);
   connectSocket();
+}
+
+// ── Nickname Prompt ─────────────────────────────────────────────────────────
+$("nick-go").onclick=submitNickname;
+$("nick-in").addEventListener("keydown",e=>{if(e.key==="Enter")submitNickname()});
+
+async function submitNickname(){
+  const nick=$("nick-in").value.trim();
+  $("nick-err").textContent="";
+  if(!nick||nick.length<2){$("nick-err").textContent="Nickname must be at least 2 characters";return}
+  if(nick.length>20){$("nick-err").textContent="Nickname must be 20 characters or less";return}
+  const d=await api("/api/profile",{nickname:nick});
+  if(d.ok){
+    currentUser.nickname=d.nickname;
+    enterLobby(currentUser);
+  } else {
+    $("nick-err").textContent=d.err||"Failed to set nickname";
+  }
 }
 
 // ── Socket.IO ───────────────────────────────────────────────────────────────
@@ -211,6 +238,13 @@ function connectSocket(){
   io_.on("m",async data=>{
     showStatus("Matched! Connecting video…","Establishing peer-to-peer link");
     peerInitiator=data.init;
+    // Show partner nickname
+    if(data.partner_nick){
+      partnerNick.textContent=data.partner_nick;
+      partnerNick.style.display="block";
+    } else {
+      partnerNick.style.display="none";
+    }
     setupPeer(data.init);
   });
 

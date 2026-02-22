@@ -123,6 +123,21 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
   </div>
 </div>
 
+<!-- ═══ Nickname Prompt ═══ -->
+<div id="N" class="s">
+  <div style="text-align:center">
+    <h1>No<b>va</b></h1>
+    <p class="tag" style="margin-bottom:1.4rem">Choose a nickname</p>
+    <div class="auth-box">
+      <p style="font-size:13px;color:var(--tx2);margin-bottom:1rem">This is how other people will see you</p>
+      <input type="text" id="nick-in" maxlength="20" placeholder="Enter nickname (2-20 chars)"
+        style="width:100%;padding:12px 14px;border:1px solid var(--br);border-radius:10px;font:inherit;font-size:15px;outline:none;text-align:center;background:var(--bg2);color:var(--tx)">
+      <button class="b bp" id="nick-go" style="width:100%;margin-top:12px;justify-content:center">Continue →</button>
+      <div class="ae" id="nick-err"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ Lobby ═══ -->
 <div id="L" class="s">
   <div>
@@ -151,6 +166,7 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
   <div class="vid-area">
     <div class="logo-sm">No<b>va</b></div>
     <div class="online-sm"><span class="d"></span><span id="oc">0</span> online</div>
+    <div id="partner-nick" style="display:none;position:absolute;bottom:16px;left:16px;z-index:3;background:#0008;color:#fff;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;backdrop-filter:blur(4px)"></div>
     <video id="rv" autoplay playsinline></video>
     <video id="lv" autoplay playsinline muted></video>
     <div class="vid-status" id="vs">

@@ -115,13 +115,13 @@ tr:hover td{background:#f5f5ff}
 <!-- Users Tab -->
 <div id="tab-users" class="tab-content">
   <div class="search-bar">
-    <input type="text" id="user-search" placeholder="Search by email or name…">
+    <input type="text" id="user-search" placeholder="Search by email, name, or nickname…">
     <button onclick="searchUsers()">Search</button>
   </div>
   <div class="table-wrap">
     <table>
       <thead>
-        <tr><th>User</th><th>Email</th><th>Auth</th><th>Joined</th><th>Last Login</th><th></th></tr>
+        <tr><th>User</th><th>Nickname</th><th>Email</th><th>Auth</th><th>Joined</th><th>Last Login</th><th></th></tr>
       </thead>
       <tbody id="user-body">
         <tr><td colspan="6" style="text-align:center;color:#aaa">Click "Users" tab to load</td></tr>
@@ -253,7 +253,7 @@ async function loadUsers(){
 
     const tbody=$("user-body");
     if(!d.users.length){
-      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa">No users found</td></tr>';
+      tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#aaa">No users found</td></tr>';
     } else {
       tbody.innerHTML=d.users.map(u=>{
         const avatar=u.avatar
@@ -263,6 +263,7 @@ async function loadUsers(){
         const login=u.last_login?u.last_login.replace("T"," ").slice(0,16):"—";
         return `<tr>
           <td><div class="user-row">${avatar}<span>${escHtml(u.name||"—")}</span></div></td>
+          <td>${escHtml(u.nickname||"—")}</td>
           <td>${escHtml(u.email)}</td>
           <td>${escHtml(u.auth)}</td>
           <td>${escHtml(created)}</td>

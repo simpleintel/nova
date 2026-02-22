@@ -120,7 +120,7 @@ TOS_VERSION = "1.0"  # bump this when TOS changes — users must re-accept
 init_db()
 cleanup_old_logs()
 
-# Migrate: add tos columns if missing (safe for existing DBs)
+# Migrate: add columns if missing (safe for existing DBs)
 try:
     with get_db() as db:
         cols = [r[1] for r in db.execute("PRAGMA table_info(users)").fetchall()]
@@ -128,7 +128,9 @@ try:
             db.execute("ALTER TABLE users ADD COLUMN tos_accepted_at TIMESTAMP")
             db.execute("ALTER TABLE users ADD COLUMN tos_accepted_ip TEXT")
             db.execute("ALTER TABLE users ADD COLUMN tos_version TEXT")
-            db.commit()
+        if "nickname" not in cols:
+            db.execute("ALTER TABLE users ADD COLUMN nickname TEXT")
+        db.commit()
 except Exception:
     pass
 
@@ -218,8 +220,23 @@ def _try_match(sid: str):
                 log_action(uid, "match", partner_user_id=p_uid, ip=get_client_ip())
             if p_uid:
                 log_action(p_uid, "match", partner_user_id=uid, ip=get_client_ip())
-            emit("m", {"init": True}, to=sid)
-            emit("m", {"init": False}, to=candidate)
+            # Send partner's nickname to each user
+            sid_nick = session.get("user_nickname", "") if sid == request.sid else ""
+            cand_nick = ""
+            # Look up nicknames from DB for both
+            try:
+                _db = get_db()
+                if uid:
+                    _r = _db.execute("SELECT nickname FROM users WHERE id = ?", (uid,)).fetchone()
+                    sid_nick = (_r["nickname"] or "") if _r else ""
+                if p_uid:
+                    _r = _db.execute("SELECT nickname FROM users WHERE id = ?", (p_uid,)).fetchone()
+                    cand_nick = (_r["nickname"] or "") if _r else ""
+                _db.close()
+            except Exception:
+                pass
+            emit("m", {"init": True, "partner_nick": cand_nick}, to=sid)
+            emit("m", {"init": False, "partner_nick": sid_nick}, to=candidate)
             return True
     return False
 
@@ -273,6 +290,7 @@ def auth_google():
         )
         db.commit()
         uid = row["id"]
+        nickname = row["nickname"] or ""
     else:
         # New user
         cur = db.execute(
@@ -282,6 +300,7 @@ def auth_google():
         )
         db.commit()
         uid = cur.lastrowid
+        nickname = ""
 
     db.close()
 
@@ -289,6 +308,7 @@ def auth_google():
     session["user_name"] = name or email.split("@")[0]
     session["user_email"] = email
     session["user_avatar"] = avatar
+    session["user_nickname"] = nickname
 
     # Log the login
     log_action(uid, "login", ip=get_client_ip(), user_agent=get_user_agent(),
@@ -296,7 +316,7 @@ def auth_google():
 
     return jsonify({
         "ok": True,
-        "user": {"name": session["user_name"], "email": email, "avatar": avatar},
+        "user": {"name": session["user_name"], "email": email, "avatar": avatar, "nickname": nickname},
     })
 
 
@@ -378,9 +398,36 @@ def me():
                 "name": session.get("user_name", ""),
                 "email": session.get("user_email", ""),
                 "avatar": session.get("user_avatar", ""),
+                "nickname": session.get("user_nickname", ""),
             },
         })
     return jsonify({"ok": False}), 401
+
+
+@app.route("/api/profile", methods=["POST"])
+def set_profile():
+    """Set nickname for the current user."""
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify({"ok": False, "err": "Not logged in"}), 401
+
+    data = request.get_json(silent=True) or {}
+    nickname = data.get("nickname", "").strip()
+
+    if not nickname:
+        return jsonify({"ok": False, "err": "Nickname is required"}), 400
+    if len(nickname) < 2:
+        return jsonify({"ok": False, "err": "Nickname must be at least 2 characters"}), 400
+    if len(nickname) > 20:
+        return jsonify({"ok": False, "err": "Nickname must be 20 characters or less"}), 400
+
+    db = get_db()
+    db.execute("UPDATE users SET nickname = ? WHERE id = ?", (nickname, uid))
+    db.commit()
+    db.close()
+
+    session["user_nickname"] = nickname
+    return jsonify({"ok": True, "nickname": nickname})
 
 
 # ── Admin Dashboard ──────────────────────────────────────────────────────────
@@ -474,19 +521,19 @@ def admin_users():
     if q:
         like = f"%{q}%"
         total = db.execute(
-            "SELECT COUNT(*) FROM users WHERE email LIKE ? OR name LIKE ? OR google_id LIKE ?",
-            (like, like, like),
+            "SELECT COUNT(*) FROM users WHERE email LIKE ? OR name LIKE ? OR nickname LIKE ? OR google_id LIKE ?",
+            (like, like, like, like),
         ).fetchone()[0]
         rows = db.execute(
-            "SELECT id, email, name, avatar, auth_method, created, last_login FROM users "
-            "WHERE email LIKE ? OR name LIKE ? OR google_id LIKE ? "
+            "SELECT id, email, name, nickname, avatar, auth_method, created, last_login FROM users "
+            "WHERE email LIKE ? OR name LIKE ? OR nickname LIKE ? OR google_id LIKE ? "
             "ORDER BY created DESC LIMIT ? OFFSET ?",
-            (like, like, like, per_page, offset),
+            (like, like, like, like, per_page, offset),
         ).fetchall()
     else:
         total = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
         rows = db.execute(
-            "SELECT id, email, name, avatar, auth_method, created, last_login FROM users "
+            "SELECT id, email, name, nickname, avatar, auth_method, created, last_login FROM users "
             "ORDER BY created DESC LIMIT ? OFFSET ?",
             (per_page, offset),
         ).fetchall()
@@ -498,6 +545,7 @@ def admin_users():
             "id": r["id"],
             "email": r["email"],
             "name": r["name"] or "",
+            "nickname": r["nickname"] or "",
             "avatar": r["avatar"] or "",
             "auth": r["auth_method"],
             "created": r["created"],
