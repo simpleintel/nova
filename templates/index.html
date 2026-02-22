@@ -12,6 +12,21 @@
   gtag('js', new Date());
   gtag('config', 'AW-676753769');
 </script>
+<!-- Event snippet for Contact conversion -->
+<script>
+function gtag_report_conversion(url) {
+  var callback = function () {
+    if (typeof(url) != 'undefined') {
+      window.location = url;
+    }
+  };
+  gtag('event', 'conversion', {
+      'send_to': 'AW-676753769/c7YdCOO9ndoBEOni2cIC',
+      'event_callback': callback
+  });
+  return false;
+}
+</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{

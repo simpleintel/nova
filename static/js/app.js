@@ -409,6 +409,7 @@ micBtn.onclick=()=>{
 
 // Start chat
 $("go").onclick=async()=>{
+  if(typeof gtag_report_conversion==="function") gtag_report_conversion();
   show(C);
   showStatus("Starting camera…","Requesting access…");
   const stream = await getCamera();
