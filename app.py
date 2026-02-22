@@ -178,6 +178,37 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_logs_time    ON logs(timestamp);
             CREATE INDEX IF NOT EXISTS idx_logs_ip      ON logs(ip);
             CREATE INDEX IF NOT EXISTS idx_users_google ON users(google_id);
+
+            CREATE TABLE IF NOT EXISTS reports (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                reporter_id     INTEGER NOT NULL,
+                reported_id     INTEGER NOT NULL,
+                reason          TEXT NOT NULL,
+                details         TEXT,
+                reporter_ip     TEXT,
+                status          TEXT NOT NULL DEFAULT 'pending',
+                admin_note      TEXT,
+                created         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                resolved_at     TIMESTAMP,
+                FOREIGN KEY (reporter_id) REFERENCES users(id),
+                FOREIGN KEY (reported_id) REFERENCES users(id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
+            CREATE INDEX IF NOT EXISTS idx_reports_reported ON reports(reported_id);
+
+            CREATE TABLE IF NOT EXISTS bans (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id         INTEGER NOT NULL UNIQUE,
+                reason          TEXT,
+                banned_by       INTEGER,
+                created         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expires_at      TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (banned_by) REFERENCES users(id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_bans_user ON bans(user_id);
         """)
         db.commit()
 
@@ -206,7 +237,7 @@ def log_action(user_id, action, partner_user_id=None, ip=None, user_agent=None, 
         pass  # logging should never crash the app
 
 
-TOS_VERSION = "1.0"  # bump this when TOS changes — users must re-accept
+TOS_VERSION = "1.1"  # bump this when TOS changes — users must re-accept
 
 init_db()
 cleanup_old_logs()
@@ -332,6 +363,21 @@ def _try_match(sid: str):
     return False
 
 
+# ── Ban check helper ─────────────────────────────────────────────────────────
+def is_banned(user_id):
+    """Check if a user is currently banned."""
+    try:
+        db = get_db()
+        row = db.execute(
+            "SELECT * FROM bans WHERE user_id = ? AND (expires_at IS NULL OR expires_at > datetime('now'))",
+            (user_id,),
+        ).fetchone()
+        db.close()
+        return row is not None
+    except Exception:
+        return False
+
+
 # ── Auth Routes ──────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
@@ -341,6 +387,11 @@ def index():
 @app.route("/tos")
 def tos_page():
     return render_template("tos.html")
+
+
+@app.route("/privacy")
+def privacy_page():
+    return render_template("privacy.html")
 
 
 @app.route("/api/auth/google", methods=["POST"])
@@ -374,6 +425,10 @@ def auth_google():
     row = db.execute("SELECT * FROM users WHERE google_id = ?", (google_id,)).fetchone()
 
     if row:
+        # Check if banned
+        if is_banned(row["id"]):
+            db.close()
+            return jsonify({"ok": False, "err": "Your account has been suspended. Contact rahul@simpleintelligence.com for details."}), 403
         # Existing user — update last login + TOS acceptance
         db.execute(
             "UPDATE users SET last_login = CURRENT_TIMESTAMP, name = ?, avatar = ?, email = ?, "
@@ -693,12 +748,316 @@ def admin_delete_user(user_id):
     return jsonify({"ok": True})
 
 
+# ── Report / Block ────────────────────────────────────────────────────────────
+@app.route("/api/report", methods=["POST"])
+@rate_limit(max_requests=5, window_seconds=300)  # 5 reports per 5 minutes
+def report_user():
+    """Report the current chat partner."""
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify({"ok": False, "err": "Not logged in"}), 401
+
+    data = request.get_json(silent=True) or {}
+    reason = data.get("reason", "").strip()
+    details = data.get("details", "").strip()[:500]
+
+    if not reason:
+        return jsonify({"ok": False, "err": "Reason is required"}), 400
+
+    valid_reasons = ["harassment", "inappropriate", "underage", "spam", "illegal", "other"]
+    if reason not in valid_reasons:
+        return jsonify({"ok": False, "err": "Invalid reason"}), 400
+
+    # Find current partner
+    reported_uid = None
+    for sid, u in sid_to_uid.items():
+        if u == uid:
+            partner_sid = partners.get(sid)
+            if partner_sid:
+                reported_uid = sid_to_uid.get(partner_sid)
+            break
+
+    if not reported_uid:
+        return jsonify({"ok": False, "err": "No active chat partner to report"}), 400
+
+    if reported_uid == uid:
+        return jsonify({"ok": False, "err": "Cannot report yourself"}), 400
+
+    db = get_db()
+    db.execute(
+        "INSERT INTO reports (reporter_id, reported_id, reason, details, reporter_ip) VALUES (?, ?, ?, ?, ?)",
+        (uid, reported_uid, reason, details, get_client_ip()),
+    )
+    db.commit()
+
+    # Check auto-ban: if 3+ reports from different users, auto-ban
+    report_count = db.execute(
+        "SELECT COUNT(DISTINCT reporter_id) FROM reports WHERE reported_id = ? AND status = 'pending'",
+        (reported_uid,),
+    ).fetchone()[0]
+    db.close()
+
+    if report_count >= 3:
+        try:
+            ban_db = get_db()
+            ban_db.execute(
+                "INSERT OR IGNORE INTO bans (user_id, reason, banned_by) VALUES (?, ?, NULL)",
+                (reported_uid, f"Auto-banned: {report_count} reports from different users"),
+            )
+            ban_db.commit()
+            ban_db.close()
+            # Force disconnect the banned user
+            for sid, u in list(sid_to_uid.items()):
+                if u == reported_uid:
+                    _leave_partner(sid, auto_requeue=False)
+                    _remove_from_queue(sid)
+                    online.discard(sid)
+                    sid_to_uid.pop(sid, None)
+                    socketio.emit("force_logout", to=sid)
+        except Exception:
+            pass
+
+    log_action(uid, "report", partner_user_id=reported_uid, ip=get_client_ip(),
+               details=f"reason:{reason}")
+    return jsonify({"ok": True, "msg": "Report submitted. Thank you for keeping Nova safe."})
+
+
+# ── Admin: Reports & Bans ────────────────────────────────────────────────────
+@app.route("/api/admin/reports")
+def admin_reports():
+    """List all reports with pagination."""
+    if not is_admin():
+        return jsonify({"error": "Unauthorized"}), 403
+
+    status_filter = request.args.get("status", "pending")
+    page = max(1, int(request.args.get("page", 1)))
+    per_page = 50
+    offset = (page - 1) * per_page
+
+    db = get_db()
+    total = db.execute("SELECT COUNT(*) FROM reports WHERE status = ?", (status_filter,)).fetchone()[0]
+    rows = db.execute("""
+        SELECT r.*, 
+               reporter.email AS reporter_email, reporter.nickname AS reporter_nick,
+               reported.email AS reported_email, reported.nickname AS reported_nick
+        FROM reports r
+        LEFT JOIN users reporter ON reporter.id = r.reporter_id
+        LEFT JOIN users reported ON reported.id = r.reported_id
+        WHERE r.status = ?
+        ORDER BY r.created DESC LIMIT ? OFFSET ?
+    """, (status_filter, per_page, offset)).fetchall()
+    db.close()
+
+    reports = [
+        {
+            "id": r["id"],
+            "reporter": r["reporter_email"] or "—",
+            "reporter_nick": r["reporter_nick"] or "",
+            "reported": r["reported_email"] or "—",
+            "reported_nick": r["reported_nick"] or "",
+            "reported_id": r["reported_id"],
+            "reason": r["reason"],
+            "details": r["details"] or "",
+            "status": r["status"],
+            "created": r["created"],
+        }
+        for r in rows
+    ]
+
+    return jsonify({"reports": reports, "total": total, "page": page, "per_page": per_page})
+
+
+@app.route("/api/admin/reports/<int:report_id>/resolve", methods=["POST"])
+def admin_resolve_report(report_id):
+    """Resolve a report (dismiss or ban)."""
+    if not is_admin():
+        return jsonify({"error": "Unauthorized"}), 403
+
+    data = request.get_json(silent=True) or {}
+    action = data.get("action", "dismiss")  # "dismiss" or "ban"
+    note = data.get("note", "").strip()[:500]
+
+    db = get_db()
+    report = db.execute("SELECT * FROM reports WHERE id = ?", (report_id,)).fetchone()
+    if not report:
+        db.close()
+        return jsonify({"error": "Report not found"}), 404
+
+    db.execute(
+        "UPDATE reports SET status = ?, admin_note = ?, resolved_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (action + "ed", note, report_id),
+    )
+
+    if action == "ban":
+        # Ban the reported user
+        db.execute(
+            "INSERT OR IGNORE INTO bans (user_id, reason, banned_by) VALUES (?, ?, ?)",
+            (report["reported_id"], f"Banned by admin: {report['reason']}. {note}", session.get("user_id")),
+        )
+        # Force disconnect
+        for sid, uid in list(sid_to_uid.items()):
+            if uid == report["reported_id"]:
+                _leave_partner(sid, auto_requeue=False)
+                _remove_from_queue(sid)
+                online.discard(sid)
+                sid_to_uid.pop(sid, None)
+                socketio.emit("force_logout", to=sid)
+
+    db.commit()
+    db.close()
+
+    log_action(session.get("user_id"), f"admin_report_{action}", ip=get_client_ip(),
+               details=f"report #{report_id}, user {report['reported_id']}")
+    return jsonify({"ok": True})
+
+
+@app.route("/api/admin/bans")
+def admin_bans():
+    """List all active bans."""
+    if not is_admin():
+        return jsonify({"error": "Unauthorized"}), 403
+
+    db = get_db()
+    rows = db.execute("""
+        SELECT b.*, u.email, u.nickname
+        FROM bans b LEFT JOIN users u ON u.id = b.user_id
+        WHERE b.expires_at IS NULL OR b.expires_at > datetime('now')
+        ORDER BY b.created DESC
+    """).fetchall()
+    db.close()
+
+    bans = [
+        {"id": r["id"], "user_id": r["user_id"], "email": r["email"] or "—",
+         "nickname": r["nickname"] or "", "reason": r["reason"] or "",
+         "created": r["created"]}
+        for r in rows
+    ]
+    return jsonify({"bans": bans})
+
+
+@app.route("/api/admin/bans/<int:ban_id>/unban", methods=["POST"])
+def admin_unban(ban_id):
+    """Remove a ban."""
+    if not is_admin():
+        return jsonify({"error": "Unauthorized"}), 403
+
+    db = get_db()
+    db.execute("DELETE FROM bans WHERE id = ?", (ban_id,))
+    db.commit()
+    db.close()
+
+    log_action(session.get("user_id"), "admin_unban", ip=get_client_ip(),
+               details=f"ban #{ban_id}")
+    return jsonify({"ok": True})
+
+
+# ── GDPR: Data Export & Self-Delete ──────────────────────────────────────────
+@app.route("/api/my-data")
+@rate_limit(max_requests=3, window_seconds=3600)  # 3 per hour
+def export_my_data():
+    """GDPR: Let users download all their data."""
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify({"ok": False, "err": "Not logged in"}), 401
+
+    db = get_db()
+    user = db.execute("SELECT id, email, name, nickname, auth_method, created, last_login, tos_accepted_at, tos_version FROM users WHERE id = ?", (uid,)).fetchone()
+    if not user:
+        db.close()
+        return jsonify({"ok": False, "err": "User not found"}), 404
+
+    logs = db.execute(
+        "SELECT action, ip, user_agent, details, timestamp FROM logs WHERE user_id = ? ORDER BY timestamp DESC",
+        (uid,),
+    ).fetchall()
+
+    reports_made = db.execute(
+        "SELECT reason, details, created, status FROM reports WHERE reporter_id = ? ORDER BY created DESC",
+        (uid,),
+    ).fetchall()
+
+    reports_against = db.execute(
+        "SELECT reason, created, status FROM reports WHERE reported_id = ? ORDER BY created DESC",
+        (uid,),
+    ).fetchall()
+    db.close()
+
+    return jsonify({
+        "ok": True,
+        "data": {
+            "account": {
+                "email": user["email"],
+                "name": user["name"],
+                "nickname": user["nickname"],
+                "auth_method": user["auth_method"],
+                "created": user["created"],
+                "last_login": user["last_login"],
+                "tos_accepted_at": user["tos_accepted_at"],
+                "tos_version": user["tos_version"],
+            },
+            "activity_log": [
+                {"action": l["action"], "ip": l["ip"], "timestamp": l["timestamp"], "details": l["details"]}
+                for l in logs
+            ],
+            "reports_filed": [
+                {"reason": r["reason"], "details": r["details"], "created": r["created"], "status": r["status"]}
+                for r in reports_made
+            ],
+            "reports_against_you": [
+                {"reason": r["reason"], "created": r["created"], "status": r["status"]}
+                for r in reports_against
+            ],
+        },
+    })
+
+
+@app.route("/api/delete-account", methods=["POST"])
+@rate_limit(max_requests=1, window_seconds=3600)
+def delete_my_account():
+    """GDPR: Let users delete their own account and data."""
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify({"ok": False, "err": "Not logged in"}), 401
+
+    email = session.get("user_email", "")
+
+    # Don't let admins accidentally delete themselves
+    if email.lower() in ADMIN_EMAILS:
+        return jsonify({"ok": False, "err": "Admin accounts cannot be self-deleted. Contact another admin."}), 403
+
+    # Disconnect if online
+    for sid, u in list(sid_to_uid.items()):
+        if u == uid:
+            _leave_partner(sid, auto_requeue=False)
+            _remove_from_queue(sid)
+            online.discard(sid)
+            sid_to_uid.pop(sid, None)
+
+    db = get_db()
+    # Keep audit log for legal compliance (anonymize it)
+    db.execute("UPDATE logs SET user_id = NULL, details = 'account_deleted' WHERE user_id = ?", (uid,))
+    db.execute("DELETE FROM reports WHERE reporter_id = ?", (uid,))
+    db.execute("DELETE FROM bans WHERE user_id = ?", (uid,))
+    db.execute("DELETE FROM users WHERE id = ?", (uid,))
+    db.commit()
+    db.close()
+
+    log_action(None, "account_self_delete", ip=get_client_ip(),
+               details=f"former user {uid}")
+
+    session.clear()
+    return jsonify({"ok": True, "msg": "Your account and personal data have been deleted."})
+
+
 # ── Socket Events ────────────────────────────────────────────────────────────
 @socketio.on("connect")
 def on_connect():
     uid = session.get("user_id")
     if not uid:
         return False  # reject unauthenticated
+    # Check if banned
+    if is_banned(uid):
+        return False
     sid = request.sid
     online.add(sid)
     sid_to_uid[sid] = uid

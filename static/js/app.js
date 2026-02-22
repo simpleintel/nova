@@ -140,6 +140,7 @@ fetch("/api/me").then(r=>r.json()).then(d=>{
 }).catch(()=>{});
 
 const tosCb=$("tos-cb");
+const ageCb=$("age-cb");
 
 if(GCID){
   window.addEventListener("load",()=>{
@@ -148,8 +149,12 @@ if(GCID){
       client_id: GCID,
       callback: async resp=>{
         $("a-err").textContent="";
+        if(!ageCb.checked){
+          $("a-err").textContent="You must confirm you are 18 or older.";
+          return;
+        }
         if(!tosCb.checked){
-          $("a-err").textContent="You must accept the Terms of Service.";
+          $("a-err").textContent="You must accept the Terms of Service & Privacy Policy.";
           return;
         }
         const d = await api("/api/auth/google",{credential:resp.credential,tos_accepted:true});
@@ -427,6 +432,60 @@ $("dc").onclick=()=>{
   stopCamera();
   rv.srcObject=null;
   show(L);
+};
+
+// ── Report ─────────────────────────────────────────────────────────────────
+const rptModal=$("rpt-modal");
+$("rpt-btn").onclick=()=>{
+  if(!matched){return}
+  rptModal.style.display="flex";
+  $("rpt-reason").value="";
+  $("rpt-details").value="";
+  $("rpt-msg").textContent="";
+};
+window.closeReport=()=>{rptModal.style.display="none"};
+window.submitReport=async()=>{
+  const reason=$("rpt-reason").value;
+  if(!reason){$("rpt-msg").textContent="Please select a reason";$("rpt-msg").style.color="#d44";return}
+  const d=await api("/api/report",{reason,details:$("rpt-details").value});
+  if(d.ok){
+    $("rpt-msg").style.color="#1a9";
+    $("rpt-msg").textContent=d.msg||"Report submitted. Thank you.";
+    setTimeout(()=>{rptModal.style.display="none"},1500);
+  } else {
+    $("rpt-msg").style.color="#d44";
+    $("rpt-msg").textContent=d.err||"Failed to submit report";
+  }
+};
+
+// ── GDPR: Data Export ──────────────────────────────────────────────────────
+$("dl-data").onclick=async()=>{
+  try{
+    const r=await fetch("/api/my-data");
+    const d=await r.json();
+    if(!d.ok){alert(d.err||"Failed to export data");return}
+    const blob=new Blob([JSON.stringify(d.data,null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download="nova-my-data.json";a.click();
+    URL.revokeObjectURL(url);
+  }catch(e){alert("Network error")}
+};
+
+// ── GDPR: Delete Account ───────────────────────────────────────────────────
+$("del-acct").onclick=async()=>{
+  if(!confirm("Are you sure you want to DELETE your account?\n\nThis will permanently remove your profile, nickname, and all personal data.\n\nAudit logs will be anonymised for legal compliance.\n\nThis action cannot be undone.")) return;
+  if(!confirm("FINAL CONFIRMATION: Delete your Nova account permanently?")) return;
+  const d=await api("/api/delete-account",{});
+  if(d.ok){
+    currentUser=null;
+    if(io_){io_.disconnect();io_=null}
+    stopCamera();closePeer();
+    show(A);
+    alert("Your account has been deleted. All personal data has been removed.");
+  } else {
+    alert(d.err||"Failed to delete account");
+  }
 };
 
 })();

@@ -95,6 +95,8 @@ tr:hover td{background:#f5f5ff}
 <div class="tabs">
   <button class="tab active" onclick="switchTab('stats')">📊 Stats</button>
   <button class="tab" onclick="switchTab('users')">👥 Users</button>
+  <button class="tab" onclick="switchTab('reports')">🚩 Reports</button>
+  <button class="tab" onclick="switchTab('bans')">🔨 Bans</button>
   <button class="tab" onclick="switchTab('logs')">📋 Activity</button>
 </div>
 
@@ -135,6 +137,44 @@ tr:hover td{background:#f5f5ff}
   </div>
 </div>
 
+<!-- Reports Tab -->
+<div id="tab-reports" class="tab-content">
+  <div style="margin-bottom:12px;display:flex;gap:8px">
+    <button class="tab" style="font-size:12px;padding:6px 14px" onclick="reportFilter='pending';loadReports();this.style.fontWeight='bold'" id="rf-pending"><strong>Pending</strong></button>
+    <button class="tab" style="font-size:12px;padding:6px 14px" onclick="reportFilter='banned';loadReports();this.style.fontWeight='bold'" id="rf-banned">Banned</button>
+    <button class="tab" style="font-size:12px;padding:6px 14px" onclick="reportFilter='dismissed';loadReports();this.style.fontWeight='bold'" id="rf-dismissed">Dismissed</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Time</th><th>Reporter</th><th>Reported</th><th>Reason</th><th>Details</th><th>Actions</th></tr>
+      </thead>
+      <tbody id="report-body">
+        <tr><td colspan="6" style="text-align:center;color:#aaa">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="pagination">
+    <button id="rpt-prev" onclick="rptPage--;loadReports()" disabled>← Prev</button>
+    <span id="rpt-page-info">Page 1</span>
+    <button id="rpt-next" onclick="rptPage++;loadReports()" disabled>Next →</button>
+  </div>
+</div>
+
+<!-- Bans Tab -->
+<div id="tab-bans" class="tab-content">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>User</th><th>Email</th><th>Reason</th><th>Banned On</th><th>Actions</th></tr>
+      </thead>
+      <tbody id="ban-body">
+        <tr><td colspan="5" style="text-align:center;color:#aaa">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 <!-- Activity Tab -->
 <div id="tab-logs" class="tab-content">
   <div class="table-wrap">
@@ -170,11 +210,13 @@ function escHtml(s){const d=document.createElement("div");d.textContent=s;return
 
 // ── Tabs ────────────────────────────────────────────────────────────────
 function switchTab(name){
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".tabs>.tab").forEach(t=>t.classList.remove("active"));
   document.querySelectorAll(".tab-content").forEach(t=>t.classList.remove("active"));
   event.target.classList.add("active");
   $("tab-"+name).classList.add("active");
   if(name==="users") loadUsers();
+  if(name==="reports") loadReports();
+  if(name==="bans") loadBans();
 }
 
 // ── Stats ───────────────────────────────────────────────────────────────
@@ -182,7 +224,9 @@ const badgeClass={
   login:"badge-login",signup:"badge-signup",connect:"badge-connect",
   disconnect:"badge-disconnect",match:"badge-match",skip:"badge-skip",
   queue:"badge-queue",logout:"badge-logout",chat_end:"badge-chat_end",
-  admin_delete_user:"badge-chat_end",
+  admin_delete_user:"badge-chat_end",report:"badge-skip",
+  admin_report_ban:"badge-chat_end",admin_report_dismiss:"badge-queue",
+  admin_unban:"badge-signup",account_self_delete:"badge-chat_end",
 };
 
 async function refreshStats(){
@@ -311,6 +355,90 @@ async function confirmDelete(){
     alert("Network error");
     closeModal();
   }
+}
+
+// ── Reports ─────────────────────────────────────────────────────────────
+let reportFilter="pending";
+let rptPage=1;
+
+async function loadReports(){
+  try{
+    const params=new URLSearchParams({status:reportFilter,page:rptPage});
+    const r=await fetch("/api/admin/reports?"+params);
+    if(!r.ok) return;
+    const d=await r.json();
+    const tbody=$("report-body");
+    if(!d.reports.length){
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#aaa">No '+reportFilter+' reports</td></tr>';
+    } else {
+      tbody.innerHTML=d.reports.map(rp=>{
+        const t=rp.created?rp.created.replace("T"," ").slice(0,16):"—";
+        const actions=reportFilter==="pending"
+          ? `<button class="btn-del" style="border-color:#c90;color:#c90;margin-right:4px" onclick="resolveReport(${rp.id},'dismiss')">Dismiss</button><button class="btn-del" onclick="resolveReport(${rp.id},'ban')">Ban</button>`
+          : '<span style="color:#aaa">Resolved</span>';
+        return `<tr>
+          <td>${escHtml(t)}</td>
+          <td>${escHtml(rp.reporter)} ${rp.reporter_nick?'('+escHtml(rp.reporter_nick)+')':''}</td>
+          <td>${escHtml(rp.reported)} ${rp.reported_nick?'('+escHtml(rp.reported_nick)+')':''}</td>
+          <td><span class="badge badge-skip">${escHtml(rp.reason)}</span></td>
+          <td>${escHtml(rp.details)}</td>
+          <td>${actions}</td>
+        </tr>`;
+      }).join("");
+    }
+    const totalPages=Math.ceil(d.total/d.per_page)||1;
+    $("rpt-page-info").textContent="Page "+d.page+" of "+totalPages+" ("+d.total+" reports)";
+    $("rpt-prev").disabled=d.page<=1;
+    $("rpt-next").disabled=d.page>=totalPages;
+  }catch(e){}
+}
+
+async function resolveReport(id,action){
+  const note=action==="ban"?prompt("Admin note (optional):",""):""
+  if(note===null) return;
+  try{
+    const r=await fetch("/api/admin/reports/"+id+"/resolve",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({action,note:note||""})
+    });
+    const d=await r.json();
+    if(d.ok){loadReports();refreshStats();if(action==="ban")loadBans();}
+    else alert(d.error||"Failed");
+  }catch(e){alert("Network error")}
+}
+
+// ── Bans ────────────────────────────────────────────────────────────────
+async function loadBans(){
+  try{
+    const r=await fetch("/api/admin/bans");
+    if(!r.ok) return;
+    const d=await r.json();
+    const tbody=$("ban-body");
+    if(!d.bans.length){
+      tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:#aaa">No active bans</td></tr>';
+    } else {
+      tbody.innerHTML=d.bans.map(b=>{
+        const t=b.created?b.created.replace("T"," ").slice(0,16):"—";
+        return `<tr>
+          <td>${escHtml(b.nickname||"—")}</td>
+          <td>${escHtml(b.email)}</td>
+          <td>${escHtml(b.reason)}</td>
+          <td>${escHtml(t)}</td>
+          <td><button class="btn-del" style="border-color:#1a9;color:#1a9" onclick="unbanUser(${b.id})">Unban</button></td>
+        </tr>`;
+      }).join("");
+    }
+  }catch(e){}
+}
+
+async function unbanUser(banId){
+  if(!confirm("Unban this user?")) return;
+  try{
+    const r=await fetch("/api/admin/bans/"+banId+"/unban",{method:"POST"});
+    const d=await r.json();
+    if(d.ok) loadBans();
+    else alert(d.error||"Failed");
+  }catch(e){alert("Network error")}
 }
 </script>
 </body>

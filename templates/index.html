@@ -101,9 +101,13 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
     <h1>No<b>va</b></h1>
     <p class="tag">Video chat with strangers</p>
     <div class="auth-box">
+      <div class="tos-row" id="age-row" style="margin-bottom:8px">
+        <input type="checkbox" id="age-cb">
+        <label for="age-cb"><strong>I confirm I am 18 years or older</strong></label>
+      </div>
       <div class="tos-row" id="tos-row" style="margin-bottom:14px">
         <input type="checkbox" id="tos-cb">
-        <label for="tos-cb">I agree to the <a href="/tos" target="_blank">Terms of Service</a></label>
+        <label for="tos-cb">I agree to the <a href="/tos" target="_blank">Terms of Service</a> & <a href="/privacy" target="_blank">Privacy Policy</a></label>
       </div>
       <div class="g-wrap"><div id="g-btn"></div></div>
       <div class="ae" id="a-err"></div>
@@ -151,7 +155,11 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
     <div class="ob"><span class="d"></span><span id="ol">0</span> online</div><br>
     <button class="b bp" id="go">📹 Start Video Chat</button>
     <p class="sub">Peer-to-peer video · Server only matches you</p>
-    <div class="contact">Contact: <a href="mailto:rahul@simpleintelligence.com">rahul@simpleintelligence.com</a></div>
+    <div style="margin-top:1rem;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button class="bl" id="dl-data" title="Download your data (GDPR)">📥 My Data</button>
+      <button class="bl" id="del-acct" style="color:var(--rd);border-color:var(--rd)" title="Delete your account">🗑 Delete Account</button>
+    </div>
+    <div class="contact">Contact: <a href="mailto:rahul@simpleintelligence.com">rahul@simpleintelligence.com</a> · <a href="/privacy" target="_blank">Privacy</a> · <a href="/tos" target="_blank">Terms</a></div>
     {% if adsense_id %}
     <div class="ad-slot" id="ad-lobby">
       <div class="ad-label">Advertisement</div>
@@ -179,7 +187,31 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
     <button class="ctrl-btn tog" id="cam-tog" title="Toggle camera">📷</button>
     <button class="ctrl-btn tog" id="mic-tog" title="Toggle mic">🎤</button>
     <button class="ctrl-btn green" id="sk" title="Next person">⏭</button>
+    <button class="ctrl-btn tog" id="rpt-btn" title="Report user" style="font-size:16px;color:var(--yl)">⚠️</button>
     <button class="ctrl-btn red" id="dc" title="Disconnect">✕</button>
+  </div>
+
+  <!-- Report Modal -->
+  <div id="rpt-modal" style="display:none;position:fixed;inset:0;background:#0007;z-index:100;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:14px;padding:24px;max-width:340px;width:90%;text-align:center;font-family:inherit">
+      <h3 style="margin-bottom:8px;font-size:16px;color:#222">⚠️ Report User</h3>
+      <p style="color:#777;font-size:12px;margin-bottom:12px">Select a reason for reporting this user</p>
+      <select id="rpt-reason" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font:inherit;font-size:13px;margin-bottom:8px">
+        <option value="">— Select reason —</option>
+        <option value="harassment">Harassment / Bullying</option>
+        <option value="inappropriate">Inappropriate Content</option>
+        <option value="underage">Appears Underage</option>
+        <option value="spam">Spam / Bot</option>
+        <option value="illegal">Illegal Activity</option>
+        <option value="other">Other</option>
+      </select>
+      <textarea id="rpt-details" placeholder="Optional details…" maxlength="500" rows="2" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font:inherit;font-size:12px;resize:none;margin-bottom:12px"></textarea>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button onclick="closeReport()" style="padding:8px 20px;border-radius:8px;border:none;background:#eee;color:#555;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+        <button onclick="submitReport()" style="padding:8px 20px;border-radius:8px;border:none;background:#d44;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Report</button>
+      </div>
+      <div id="rpt-msg" style="color:#1a9;font-size:12px;margin-top:8px;min-height:16px"></div>
+    </div>
   </div>
 </div>
 
