@@ -1,9 +1,13 @@
 *.db
+*.db-shm
+*.db-wal
+*.db-journal
 __pycache__/
 *.pyc
 .git/
 .gitignore
 .env
+.secret_key
 *.md
 deploy.sh
 .vscode/

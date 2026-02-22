@@ -13,10 +13,13 @@ Video/audio flows peer-to-peer via WebRTC media streams.
 
 import json
 import os
+import re
+import secrets
 import sqlite3
 import urllib.request
-from collections import deque
+from collections import deque, defaultdict
 from datetime import datetime, timedelta
+from functools import wraps
 from time import monotonic
 
 from flask import Flask, render_template, request, session, jsonify
@@ -27,18 +30,106 @@ from werkzeug.security import generate_password_hash, check_password_hash
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 RETENTION_DAYS = int(os.environ.get("RETENTION_DAYS", "730"))  # 2 years default
 ADSENSE_ID = os.environ.get("ADSENSE_ID", "")  # e.g. ca-pub-1234567890123456
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "")  # comma-separated, e.g. https://nova.example.com
 
 # ── App Setup ────────────────────────────────────────────────────────────────
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "talktome-dev-key-change-me")
+
+# SECRET_KEY: use env var, or auto-generate and persist a strong one
+_key_file = os.path.join(os.path.dirname(__file__), ".secret_key")
+def _get_secret_key():
+    env_key = os.environ.get("SECRET_KEY", "")
+    if env_key and env_key != "talktome-dev-key-change-me":
+        return env_key
+    # Auto-generate and persist so sessions survive restarts
+    if os.path.exists(_key_file):
+        with open(_key_file) as f:
+            return f.read().strip()
+    key = secrets.token_hex(32)
+    try:
+        with open(_key_file, "w") as f:
+            f.write(key)
+        os.chmod(_key_file, 0o600)  # owner-only read/write
+    except OSError:
+        pass
+    return key
+
+app.config["SECRET_KEY"] = _get_secret_key()
+
+# Session cookie security
+app.config["SESSION_COOKIE_HTTPONLY"] = True       # JS can't read session cookie
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"     # CSRF protection
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("FLASK_ENV") != "development"  # HTTPS only in prod
+app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1MB max request body
+
+# CORS: restrict to allowed origins in production
+_cors_origins = [o.strip() for o in ALLOWED_ORIGINS.split(",") if o.strip()] if ALLOWED_ORIGINS else "*"
 
 socketio = SocketIO(
     app,
-    cors_allowed_origins="*",
+    cors_allowed_origins=_cors_origins,
     ping_interval=30,
     ping_timeout=120,       # 2 min timeout for slow connections
     max_http_buffer_size=16384,
 )
+
+
+# ── Security Headers ─────────────────────────────────────────────────────────
+@app.after_request
+def add_security_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(self), microphone=(self), geolocation=()"
+    # CSP: allow Google OAuth, SocketIO, AdSense, and own scripts
+    csp_parts = [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com https://cdnjs.cloudflare.com https://pagead2.googlesyndication.com https://www.googletagservices.com https://partner.googleadservices.com",
+        "style-src 'self' 'unsafe-inline' https://accounts.google.com",
+        "img-src 'self' data: https: blob:",
+        "connect-src 'self' wss: ws: https://accounts.google.com https://oauth2.googleapis.com",
+        "frame-src https://accounts.google.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
+        "media-src 'self' blob:",
+        "font-src 'self'",
+    ]
+    response.headers["Content-Security-Policy"] = "; ".join(csp_parts)
+    return response
+
+
+# ── Rate Limiting (in-memory) ────────────────────────────────────────────────
+_rate_buckets: dict[str, list] = defaultdict(list)
+
+def rate_limit(max_requests=10, window_seconds=60):
+    """Decorator: limit requests per IP within a time window."""
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            ip = get_client_ip()
+            key = f"{f.__name__}:{ip}"
+            now = monotonic()
+            # Clean old entries
+            _rate_buckets[key] = [t for t in _rate_buckets[key] if now - t < window_seconds]
+            if len(_rate_buckets[key]) >= max_requests:
+                return jsonify({"ok": False, "err": "Too many requests. Try again later."}), 429
+            _rate_buckets[key].append(now)
+            return f(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+# ── SocketIO rate limiting ───────────────────────────────────────────────────
+_socket_rate: dict[str, float] = {}  # sid -> last event time
+_SOCKET_MIN_INTERVAL = 0.5  # min seconds between queue/skip events
+
+def socket_rate_ok(sid: str) -> bool:
+    """Returns True if the socket event is within rate limits."""
+    now = monotonic()
+    last = _socket_rate.get(sid, 0)
+    if now - last < _SOCKET_MIN_INTERVAL:
+        return False
+    _socket_rate[sid] = now
+    return True
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "talktome.db")
 
@@ -253,6 +344,7 @@ def tos_page():
 
 
 @app.route("/api/auth/google", methods=["POST"])
+@rate_limit(max_requests=10, window_seconds=60)
 def auth_google():
     """Verify Google ID token and create/login user."""
     if not GOOGLE_CLIENT_ID:
@@ -321,6 +413,7 @@ def auth_google():
 
 
 @app.route("/api/auth/email", methods=["POST"])
+@rate_limit(max_requests=5, window_seconds=60)
 def auth_email():
     """Fallback email/password signup+login (if Google OAuth not set up)."""
     data = request.get_json(silent=True) or {}
@@ -405,6 +498,7 @@ def me():
 
 
 @app.route("/api/profile", methods=["POST"])
+@rate_limit(max_requests=10, window_seconds=60)
 def set_profile():
     """Set nickname for the current user."""
     uid = session.get("user_id")
@@ -416,6 +510,11 @@ def set_profile():
 
     if not nickname:
         return jsonify({"ok": False, "err": "Nickname is required"}), 400
+    # Sanitize: strip HTML tags
+    nickname = re.sub(r"<[^>]*>", "", nickname).strip()
+    # Only allow letters, numbers, spaces, underscores, hyphens
+    if not re.match(r"^[\w\s\-]+$", nickname, re.UNICODE):
+        return jsonify({"ok": False, "err": "Nickname can only contain letters, numbers, spaces, underscores, and hyphens"}), 400
     if len(nickname) < 2:
         return jsonify({"ok": False, "err": "Nickname must be at least 2 characters"}), 400
     if len(nickname) > 20:
@@ -622,6 +721,8 @@ def on_disconnect():
 @socketio.on("q")  # join queue
 def on_queue():
     sid = request.sid
+    if not socket_rate_ok(sid):
+        return
     if sid in waiting_set:
         return
     _leave_partner(sid)
@@ -637,6 +738,8 @@ def on_queue():
 @socketio.on("s")  # skip
 def on_skip():
     sid = request.sid
+    if not socket_rate_ok(sid):
+        return
     uid = sid_to_uid.get(sid)
     if uid:
         log_action(uid, "skip", ip=get_client_ip())

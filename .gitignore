@@ -1,3 +1,6 @@
+# Secrets
+.secret_key
+
 # Database
 *.db
 *.db-shm
