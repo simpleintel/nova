@@ -496,9 +496,11 @@ def on_ice(data):
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print("\n  ╔══════════════════════════════════════════════╗")
-    print("  ║         Nova (P2P) — running on :5000         ║")
-    print("  ╚══════════════════════════════════════════════╝\n")
+    port = int(os.environ.get("PORT", 5000))
+
+    print(f"\n  ╔══════════════════════════════════════════════╗")
+    print(f"  ║       Nova (P2P) — running on :{port}         ║")
+    print(f"  ╚══════════════════════════════════════════════╝\n")
 
     if GOOGLE_CLIENT_ID:
         print(f"  ✓ Google OAuth enabled")
@@ -518,4 +520,4 @@ if __name__ == "__main__":
     print(f"  ✓ Database: {DB_PATH}")
     print()
 
-    socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
+    socketio.run(app, host="0.0.0.0", port=port, debug=False, allow_unsafe_werkzeug=True)

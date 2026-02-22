@@ -1,0 +1,10 @@
+*.db
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.env
+*.md
+deploy.sh
+.vscode/
+.idea/
