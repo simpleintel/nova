@@ -85,10 +85,10 @@ def add_security_headers(response):
     # CSP: allow Google OAuth, SocketIO, AdSense, and own scripts
     csp_parts = [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com https://cdnjs.cloudflare.com https://pagead2.googlesyndication.com https://www.googletagservices.com https://partner.googleadservices.com",
+        "script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com https://cdnjs.cloudflare.com https://pagead2.googlesyndication.com https://www.googletagservices.com https://partner.googleadservices.com https://www.googletagmanager.com https://www.googleadservices.com",
         "style-src 'self' 'unsafe-inline' https://accounts.google.com",
         "img-src 'self' data: https: blob:",
-        "connect-src 'self' wss: ws: https://accounts.google.com https://oauth2.googleapis.com",
+        "connect-src 'self' wss: ws: https://accounts.google.com https://oauth2.googleapis.com https://www.google-analytics.com https://www.googletagmanager.com https://www.googleadservices.com",
         "frame-src https://accounts.google.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
         "media-src 'self' blob:",
         "font-src 'self'",
