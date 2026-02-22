@@ -1,7 +1,7 @@
 /**
  * Nova — P2P Video Chat (Omegle-style).
  * Video-only, no text. Google OAuth.
- * Resilient for low-bandwidth connections.
+ * Resilient for low-bandwidth connections & mobile.
  */
 (()=>{
 "use strict";
@@ -28,20 +28,38 @@ function show(el){document.querySelectorAll(".s").forEach(s=>s.classList.remove(
 
 // ── Camera ──────────────────────────────────────────────────────────────────
 async function getCamera(){
-  if(localStream) return localStream;
-  try{
-    localStream = await navigator.mediaDevices.getUserMedia({
-      video:{width:{ideal:640},height:{ideal:480},facingMode:"user"},
-      audio:true,
-    });
-    lv.srcObject = localStream;
-    return localStream;
-  }catch(e){
-    console.error("Camera error:",e);
-    vsText.textContent="Camera access denied";
-    vsSub.textContent="Please allow camera & mic access and reload";
-    return null;
+  if(localStream){
+    // Check tracks are still alive
+    const alive = localStream.getTracks().some(t=>t.readyState==="live");
+    if(alive) return localStream;
+    // Tracks ended — re-acquire
+    localStream = null;
   }
+
+  // Try progressively simpler constraints for maximum compatibility
+  const attempts = [
+    {video:{width:{ideal:640},height:{ideal:480},facingMode:"user"}, audio:true},
+    {video:{facingMode:"user"}, audio:true},
+    {video:true, audio:true},
+    {video:true, audio:false},  // some devices block mic separately
+  ];
+
+  for(const constraints of attempts){
+    try{
+      localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      lv.srcObject = localStream;
+      lv.play().catch(()=>{});
+      console.log("Camera acquired with:", JSON.stringify(constraints));
+      return localStream;
+    }catch(e){
+      console.warn("getUserMedia failed with:", JSON.stringify(constraints), e.name, e.message);
+      continue;
+    }
+  }
+
+  // All attempts failed
+  console.error("All camera attempts failed");
+  return null;
 }
 
 function stopCamera(){
@@ -53,12 +71,47 @@ function stopCamera(){
 }
 
 // ── Status UI ───────────────────────────────────────────────────────────────
-function showStatus(text,sub){
+function showStatus(text,sub,showRetry){
   vs.style.display="block";
   vsText.textContent=text;
   vsSub.textContent=sub||"";
+  // Show/hide retry button
+  let rb=$("retry-btn");
+  if(showRetry){
+    if(!rb){
+      rb=document.createElement("button");
+      rb.id="retry-btn";
+      rb.textContent="🔄 Retry Camera";
+      rb.style.cssText="margin-top:14px;padding:10px 24px;border:none;border-radius:10px;background:#4a3fc0;color:#fff;font:inherit;font-size:15px;font-weight:600;cursor:pointer";
+      rb.onclick=retryCamera;
+      vs.appendChild(rb);
+    }
+    rb.style.display="inline-block";
+  } else if(rb){
+    rb.style.display="none";
+  }
 }
-function hideStatus(){vs.style.display="none"}
+function hideStatus(){
+  vs.style.display="none";
+  let rb=$("retry-btn");
+  if(rb) rb.style.display="none";
+}
+
+async function retryCamera(){
+  showStatus("Retrying camera…","");
+  localStream=null; // force re-acquire
+  const stream = await getCamera();
+  if(stream){
+    showStatus("Looking for someone…","Hang tight");
+    io_.emit("q");
+  } else {
+    showStatus("Camera access required",
+      navigator.userAgent.match(/iPhone|iPad/i)
+        ? "Go to Settings → Safari → Camera & Microphone → Allow"
+        : "Tap the 🔒 icon in your browser's address bar → Allow Camera & Mic",
+      true);
+  }
+}
 
 function setWait(){
   matched=false;iceRestarts=0;
@@ -156,7 +209,7 @@ function connectSocket(){
   io_.on("w",()=>{setWait()});
 
   io_.on("m",async data=>{
-    showStatus("Matched! Connecting…","Establishing video link");
+    showStatus("Matched! Connecting video…","Establishing peer-to-peer link");
     peerInitiator=data.init;
     setupPeer(data.init);
   });
@@ -208,7 +261,11 @@ async function setupPeer(isInit){
   // Make sure we have camera
   const stream = await getCamera();
   if(!stream){
-    showStatus("Camera access required","Please allow camera & mic");
+    showStatus("Camera access required",
+      navigator.userAgent.match(/iPhone|iPad/i)
+        ? "Go to Settings → Safari → Camera & Microphone → Allow"
+        : "Tap the 🔒 icon in your browser's address bar → Allow Camera & Mic",
+      true);
     return;
   }
 
@@ -221,6 +278,8 @@ async function setupPeer(isInit){
   pc.ontrack=e=>{
     if(e.streams&&e.streams[0]){
       rv.srcObject=e.streams[0];
+      // Ensure playback starts (mobile autoplay policy)
+      rv.play().catch(()=>{});
       setConnected();
     }
   };
@@ -304,10 +363,14 @@ micBtn.onclick=()=>{
 // Start chat
 $("go").onclick=async()=>{
   show(C);
-  showStatus("Starting camera…","");
+  showStatus("Starting camera…","Requesting access…");
   const stream = await getCamera();
   if(!stream){
-    showStatus("Camera access required","Please allow camera & mic and try again");
+    showStatus("Camera access required",
+      navigator.userAgent.match(/iPhone|iPad/i)
+        ? "Go to Settings → Safari → Camera & Microphone → Allow"
+        : "Tap the 🔒 icon in your browser's address bar → Allow Camera & Mic",
+      true);
     return;
   }
   showStatus("Looking for someone…","Hang tight");
