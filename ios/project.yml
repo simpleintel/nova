@@ -29,8 +29,13 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
     dependencies:
       - package: SocketIO
+        product: SocketIO
       - package: GoogleSignIn
+        product: GoogleSignIn
+      - package: GoogleSignIn
+        product: GoogleSignInSwift
       - package: WebRTC
+        product: WebRTC
 
 packages:
   SocketIO:
