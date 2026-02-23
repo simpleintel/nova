@@ -1,0 +1,48 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [main]
+    paths: ['ios/**']
+  pull_request:
+    branches: [main]
+    paths: ['ios/**']
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Nova iOS
+    runs-on: macos-14
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Resolve Swift packages
+        working-directory: ios
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project Nova.xcodeproj \
+            -scheme Nova
+
+      - name: Build for iOS Simulator
+        working-directory: ios
+        run: |
+          xcodebuild build \
+            -project Nova.xcodeproj \
+            -scheme Nova \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            CODE_SIGNING_ALLOWED=NO \
+            -quiet
+
+      - name: Build result
+        if: always()
+        run: echo "Build completed with status $?"
