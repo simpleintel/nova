@@ -96,7 +96,7 @@ async function retryCamera(){
   localStream=null;
   const stream = await getCamera();
   if(stream){
-    showStatus("Looking for someone…","Hang tight");
+    showStatus("Finding a discussion partner…","Matching you with someone new");
     io_.emit("q");
   } else {
     const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
@@ -111,7 +111,7 @@ async function retryCamera(){
 function setWait(){
   matched=false;iceRestarts=0;
   rv.srcObject=null;
-  showStatus("Looking for someone…","Hang tight");
+  showStatus("Finding a discussion partner…","Matching you with someone new");
   closePeer();
 }
 function setConnected(){
@@ -332,7 +332,7 @@ async function setupPeer(isInit){
     const s=pc.iceConnectionState;
 
     if(s==="disconnected"){
-      showStatus("Connection unstable…","Trying to reconnect");
+      showStatus("Connection unstable…","Trying to reconnect…");
       setTimeout(()=>{
         if(pc&&pc.iceConnectionState==="disconnected"&&iceRestarts<MAX_ICE_RESTARTS){
           iceRestarts++;
@@ -346,7 +346,7 @@ async function setupPeer(isInit){
         tryIceRestart();
       } else {
         setDC();
-        showStatus("Connection lost","Finding someone new…");
+        showStatus("Discussion ended","Finding your next partner…");
         setTimeout(()=>{ if(io_&&io_.connected) io_.emit("s"); },500);
       }
     } else if(s==="connected"||s==="completed"){
@@ -358,7 +358,7 @@ async function setupPeer(isInit){
     if(!pc) return;
     if(pc.connectionState==="failed"&&iceRestarts>=MAX_ICE_RESTARTS){
       setDC();
-      showStatus("Connection lost","Finding someone new…");
+      showStatus("Discussion ended","Finding your next partner…");
       setTimeout(()=>{ if(io_&&io_.connected) io_.emit("s"); },500);
     }
   };
@@ -422,14 +422,14 @@ $("go").onclick=async()=>{
       true);
     return;
   }
-  showStatus("Looking for someone…","Hang tight");
+  showStatus("Finding a discussion partner…","Matching you with someone new");
   io_.emit("q");
 };
 
 // Next
 $("sk").onclick=()=>{
   setWait();
-  showStatus("Looking for someone…","Hang tight");
+  showStatus("Finding a discussion partner…","Matching you with someone new");
   io_.emit("s");
 };
 

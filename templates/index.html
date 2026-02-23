@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>Nova</title>
+<title>Nova — Debate &amp; Discuss Ideas with Strangers | Live Video Discussion Platform</title>
+<meta name="description" content="Nova is a real-time video debate platform. Challenge your perspective — discuss topics, exchange opinions, and have intellectual conversations with strangers worldwide.">
+<meta name="keywords" content="debate with strangers, online debate platform, discuss topics with strangers, talk to strangers about ideas, live discussion platform, video debate platform, random discussion chat, debate random people online, public discussion video chat, hear different opinions online, talk to people with different views, philosophy discussion online, global discussion platform, live conversation with strangers, anonymous discussion platform, peer to peer discussion platform, intellectual conversation online, challenge your perspective, real time debate platform, civil debate online, structured online discussions, meet people to debate ideas, global opinion exchange, open discussion video platform">
 <!-- Google Ads (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-676753769"></script>
 <script>
@@ -123,7 +125,10 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
 <div id="A" class="s on">
   <div>
     <h1>No<b>va</b></h1>
-    <p class="tag">Video chat with strangers</p>
+    <p class="tag">Debate ideas with strangers — live.</p>
+    <p style="max-width:340px;margin:0 auto 1.4rem;font-size:12px;color:var(--tx2);line-height:1.7">
+      Challenge your perspective. Join real-time video discussions with people from around the world. Exchange opinions, explore ideas, and hear different views.
+    </p>
     <div class="auth-box">
       <div class="tos-row" id="age-row" style="margin-bottom:8px">
         <input type="checkbox" id="age-cb">
@@ -137,7 +142,7 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
       <div class="ae" id="a-err"></div>
     </div>
     <div class="shield">
-      🛡 <b>Your safety matters.</b><br>
+      🛡 <b>Safe & civil discussions.</b><br>
       All connections are logged for legal compliance.<br>
       IP addresses and session data are retained for {{ retention_days }} days.
     </div>
@@ -157,7 +162,7 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
     <h1>No<b>va</b></h1>
     <p class="tag" style="margin-bottom:1.4rem">Choose a nickname</p>
     <div class="auth-box">
-      <p style="font-size:13px;color:var(--tx2);margin-bottom:1rem">This is how other people will see you</p>
+      <p style="font-size:13px;color:var(--tx2);margin-bottom:1rem">This is how others will see you in discussions</p>
       <input type="text" id="nick-in" maxlength="20" placeholder="Enter nickname (2-20 chars)"
         style="width:100%;padding:12px 14px;border:1px solid var(--br);border-radius:10px;font:inherit;font-size:15px;outline:none;text-align:center;background:var(--bg2);color:var(--tx)">
       <button class="b bp" id="nick-go" style="width:100%;margin-top:12px;justify-content:center">Continue →</button>
@@ -170,15 +175,15 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
 <div id="L" class="s">
   <div>
     <h1>No<b>va</b></h1>
-    <p class="tag">Video chat with strangers</p>
+    <p class="tag">Real-time video debates with strangers</p>
     <div class="ub">
       <img id="uavatar" src="" alt="" style="display:none">
       <span>Logged in as <strong id="uname"></strong></span>
       <button class="bl" id="logout">log out</button>
     </div>
     <div class="ob"><span class="d"></span><span id="ol">0</span> online</div><br>
-    <button class="b bp" id="go">📹 Start Video Chat</button>
-    <p class="sub">Peer-to-peer video · Server only matches you</p>
+    <button class="b bp" id="go">🎙 Start a Discussion</button>
+    <p class="sub">Peer-to-peer video · Hear different perspectives</p>
     <div style="margin-top:1rem;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
       <button class="bl" id="dl-data" title="Download your data (GDPR)">📥 My Data</button>
       <button class="bl" id="del-acct" style="color:var(--rd);border-color:var(--rd)" title="Delete your account">🗑 Delete Account</button>
@@ -203,7 +208,7 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
     <video id="lv" autoplay playsinline muted></video>
     <div class="vid-status" id="vs">
       <div class="spinner"></div>
-      <div class="vs-text" id="vs-text">Looking for someone…</div>
+      <div class="vs-text" id="vs-text">Finding a discussion partner…</div>
       <div class="vs-sub" id="vs-sub">Please allow camera access</div>
     </div>
   </div>
