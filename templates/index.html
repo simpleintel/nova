@@ -35,70 +35,74 @@ function gtag_report_conversion(url) {
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#0b0b1a;--bg2:#15152a;--bg3:#1e1e38;
-  --br:#2a2a4a;--br2:#3a3a5a;
-  --tx:#f0f0f5;--tx2:#8888aa;--tx3:#55557a;
-  --ac:#7c6aff;--ac2:#9d8cff;--ac3:#5b4cd4;
-  --gn:#34d399;--rd:#ef4444;--yl:#f59e0b
+  --bg:#fff;--bg2:#f7f7fb;--bg3:#f0f0f5;
+  --br:#e2e2ea;--br2:#d0d0da;
+  --tx:#1a1a2e;--tx2:#6b6b80;--tx3:#9999aa;
+  --ac:#5b4cd4;--ac2:#7c6aff;--ac3:#4338ca;
+  --gn:#10b981;--rd:#ef4444;--yl:#f59e0b
 }
 html,body{height:100%;overflow:hidden}
 body{font:15px/1.6 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--tx)}
 
-/* subtle animated gradient bg */
-.bg-glow{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
-.bg-glow::before,.bg-glow::after{content:'';position:absolute;border-radius:50%;filter:blur(120px);opacity:.15;animation:glow 12s ease-in-out infinite alternate}
-.bg-glow::before{width:600px;height:600px;background:var(--ac);top:-200px;left:-100px}
-.bg-glow::after{width:500px;height:500px;background:#6366f1;bottom:-200px;right:-100px;animation-delay:6s}
-@keyframes glow{0%{transform:translate(0,0) scale(1)}100%{transform:translate(60px,40px) scale(1.15)}}
+.s{display:none;height:100%;width:100%;position:relative;z-index:1;overflow-y:auto}.s.on{display:flex}
 
-.s{display:none;height:100%;width:100%;position:relative;z-index:1}.s.on{display:flex}
+/* card */
+.card{background:var(--bg);border:1px solid var(--br);border-radius:20px;padding:36px 32px;box-shadow:0 2px 20px rgba(0,0,0,.04)}
 
-/* glass card */
-.glass{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:32px 28px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(0,0,0,.3)}
-
-/* auth */
-#A{align-items:center;justify-content:center;text-align:center}
-#A h1{font-size:2.8rem;font-weight:800;margin-bottom:.3rem;letter-spacing:-1px}
-#A h1 b{background:linear-gradient(135deg,var(--ac),var(--ac2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-#A .tag{color:var(--tx2);margin-bottom:1.8rem;font-size:15px;font-weight:400}
+/* auth — scrollable landing page */
+#A{flex-direction:column;align-items:center;background:var(--bg2)}
+.hero{width:100%;max-width:480px;padding:60px 20px 40px;text-align:center}
+.hero h1{font-size:2.8rem;font-weight:800;letter-spacing:-1px;margin-bottom:.3rem;color:var(--tx)}
+.hero h1 b{color:var(--ac)}
+.hero .tag{color:var(--tx2);font-size:16px;margin-bottom:2rem;font-weight:400}
 .auth-box{width:320px;margin:0 auto}
 .g-wrap{margin-bottom:14px;display:flex;justify-content:center}
 .ae{color:var(--rd);font-size:13px;min-height:18px;margin-top:6px}
-.shield{margin-top:1.6rem;font-size:11px;color:var(--tx3);line-height:1.7}
-.shield b{color:var(--tx2)}
 .tos-row{display:flex;align-items:flex-start;gap:8px;margin-top:10px;text-align:left;font-size:12px;color:var(--tx2)}
 .tos-row input[type=checkbox]{margin-top:3px;accent-color:var(--ac);cursor:pointer;flex-shrink:0;width:16px;height:16px}
-.tos-row a{color:var(--ac2);text-decoration:none;border-bottom:1px solid var(--ac3)}
-.tos-row a:hover{color:var(--ac);border-color:var(--ac)}
+.tos-row a{color:var(--ac);text-decoration:none;border-bottom:1px solid var(--br2)}
+.tos-row a:hover{color:var(--ac3);border-color:var(--ac)}
+
+/* features section */
+.features{width:100%;max-width:640px;padding:0 20px 40px}
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:8px}
+.feat{background:var(--bg);border:1px solid var(--br);border-radius:14px;padding:20px 16px;text-align:center;transition:all .2s}
+.feat:hover{border-color:var(--ac);box-shadow:0 4px 16px rgba(91,76,212,.08)}
+.feat-icon{font-size:28px;margin-bottom:8px;display:block}
+.feat h3{font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px}
+.feat p{font-size:11px;color:var(--tx2);line-height:1.5}
+
+.shield{margin-top:1.2rem;font-size:11px;color:var(--tx3);line-height:1.7;text-align:center}
+.shield b{color:var(--tx2)}
 
 /* lobby */
-#L{align-items:center;justify-content:center;text-align:center}
-#L h1{font-size:2.8rem;font-weight:800;margin-bottom:.3rem;letter-spacing:-1px}
-#L h1 b{background:linear-gradient(135deg,var(--ac),var(--ac2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+#L{align-items:center;justify-content:center;text-align:center;background:var(--bg2)}
+#L h1{font-size:2.8rem;font-weight:800;margin-bottom:.3rem;letter-spacing:-1px;color:var(--tx)}
+#L h1 b{color:var(--ac)}
 #L .tag{color:var(--tx2);margin-bottom:1.4rem;font-size:15px}
-.ob{display:inline-flex;align-items:center;gap:7px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:99px;padding:6px 16px;font-size:13px;color:var(--gn);margin-bottom:1.4rem;font-weight:500}
-.ob .d{width:8px;height:8px;border-radius:50%;background:var(--gn);box-shadow:0 0 8px var(--gn);animation:pulse-dot 2s infinite}
-@keyframes pulse-dot{0%,100%{opacity:1;box-shadow:0 0 8px var(--gn)}50%{opacity:.5;box-shadow:0 0 16px var(--gn)}}
+.ob{display:inline-flex;align-items:center;gap:7px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:99px;padding:6px 16px;font-size:13px;color:var(--gn);margin-bottom:1.4rem;font-weight:500}
+.ob .d{width:8px;height:8px;border-radius:50%;background:var(--gn);box-shadow:0 0 8px rgba(16,185,129,.5);animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
 .ub{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;color:var(--tx2);margin-bottom:1.2rem}
 .ub img{width:28px;height:28px;border-radius:50%;border:2px solid var(--br)}
 .ub strong{color:var(--tx)}
 
 .b{font:inherit;font-weight:600;font-size:14px;border:none;border-radius:12px;cursor:pointer;padding:8px 18px;display:inline-flex;align-items:center;gap:6px;transition:all .2s}
-.bp{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;font-size:16px;padding:16px 40px;border-radius:14px;box-shadow:0 4px 20px rgba(124,106,255,.3);letter-spacing:.3px}
-.bp:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(124,106,255,.45)}
+.bp{background:var(--ac);color:#fff;font-size:16px;padding:16px 40px;border-radius:14px;box-shadow:0 4px 16px rgba(91,76,212,.25);letter-spacing:.3px}
+.bp:hover{background:var(--ac3);transform:translateY(-1px);box-shadow:0 6px 24px rgba(91,76,212,.35)}
 .bp:active{transform:translateY(0)}
-.bl{background:rgba(255,255,255,.04);color:var(--tx2);font-size:12px;padding:6px 12px;border:1px solid var(--br);border-radius:8px;cursor:pointer;transition:all .2s}
-.bl:hover{background:rgba(255,255,255,.08);border-color:var(--br2);color:var(--tx)}
+.bl{background:var(--bg);color:var(--tx2);font-size:12px;padding:6px 12px;border:1px solid var(--br);border-radius:8px;cursor:pointer;transition:all .2s}
+.bl:hover{background:var(--bg2);border-color:var(--br2);color:var(--tx)}
 .sub{margin-top:1rem;font-size:12px;color:var(--tx3)}
 
 /* nickname */
-#N{align-items:center;justify-content:center;text-align:center}
-#N h1{font-size:2.8rem;font-weight:800;letter-spacing:-1px}
-#N h1 b{background:linear-gradient(135deg,var(--ac),var(--ac2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.nick-input{width:100%;padding:14px 16px;border:1px solid var(--br);border-radius:12px;font:inherit;font-size:15px;outline:none;text-align:center;background:var(--bg2);color:var(--tx);transition:border-color .2s}
-.nick-input:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(124,106,255,.15)}
+#N{align-items:center;justify-content:center;text-align:center;background:var(--bg2)}
+#N h1{font-size:2.8rem;font-weight:800;letter-spacing:-1px;color:var(--tx)}
+#N h1 b{color:var(--ac)}
+.nick-input{width:100%;padding:14px 16px;border:1px solid var(--br);border-radius:12px;font:inherit;font-size:15px;outline:none;text-align:center;background:var(--bg);color:var(--tx);transition:all .2s}
+.nick-input:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(91,76,212,.1)}
 
-/* video chat */
+/* video chat — stays dark */
 #C{flex-direction:column;background:#000}
 .vid-area{flex:1;position:relative;overflow:hidden;background:#0a0a0a}
 #rv{width:100%;height:100%;object-fit:cover;background:#111}
@@ -107,7 +111,7 @@ body{font:15px/1.6 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sa
 .vid-status button{pointer-events:auto}
 .vid-status .vs-text{font-size:18px;font-weight:600;margin-bottom:8px}
 .vid-status .vs-sub{font-size:13px;color:#888}
-.vid-status .spinner{width:40px;height:40px;border:3px solid #222;border-top-color:var(--ac);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 12px}
+.vid-status .spinner{width:40px;height:40px;border:3px solid #222;border-top-color:var(--ac2);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 12px}
 @keyframes sp{to{transform:rotate(360deg)}}
 
 /* bottom controls */
@@ -128,23 +132,29 @@ body{font:15px/1.6 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sa
 /* contact */
 .contact{margin-top:1.4rem;font-size:11px;color:var(--tx3)}
 .contact a{color:var(--tx2);text-decoration:none;transition:color .2s}
-.contact a:hover{color:var(--ac2)}
+.contact a:hover{color:var(--ac)}
 
 /* ads */
 .ad-slot{margin:16px auto;text-align:center;overflow:hidden;max-width:728px;min-height:50px}
 .ad-label{font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
 
-/* fade in animation */
+/* fade in */
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 .fade-in{animation:fadeUp .5s ease-out both}
 .fade-in-d1{animation-delay:.1s}
 .fade-in-d2{animation-delay:.2s}
 .fade-in-d3{animation-delay:.3s}
+.fade-in-d4{animation-delay:.4s}
 
 @media(max-width:600px){
-  #A h1,#L h1,#N h1{font-size:2rem}
+  .hero h1,#L h1,#N h1{font-size:2rem}
+  .hero{padding:40px 16px 24px}
   .auth-box{width:280px}
-  .glass{padding:24px 20px}
+  .card{padding:24px 20px}
+  .features-grid{grid-template-columns:1fr;gap:10px}
+  .feat{padding:14px 12px;display:flex;align-items:center;gap:12px;text-align:left}
+  .feat-icon{font-size:24px;margin-bottom:0;flex-shrink:0}
+  .feat h3{margin-bottom:2px}
   #lv{width:100px;height:75px;bottom:10px;right:10px}
   .ctrl-btn{width:44px;height:44px}
   .ctrl-btn svg{width:18px;height:18px}
@@ -156,59 +166,110 @@ body{font:15px/1.6 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sa
 </head>
 <body>
 
-<!-- Background glow -->
-<div class="bg-glow"></div>
-
-<!-- ═══ Auth Screen ═══ -->
+<!-- ═══ Auth Screen (scrollable landing) ═══ -->
 <div id="A" class="s on">
-  <div class="glass fade-in" style="max-width:400px;width:90%;margin:0 auto">
+
+  <!-- Hero -->
+  <div class="hero fade-in">
     <!-- Debate illustration -->
-    <svg viewBox="0 0 320 140" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:220px;margin:0 auto 12px;display:block;opacity:.9">
+    <svg viewBox="0 0 320 130" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:240px;margin:0 auto 16px;display:block">
       <!-- Left person -->
-      <circle cx="80" cy="82" r="22" fill="#7c6aff" opacity=".15"/>
-      <circle cx="80" cy="72" r="14" fill="#9d8cff"/>
-      <path d="M62 105c0-10 8-18 18-18s18 8 18 18" fill="#9d8cff" opacity=".7"/>
+      <circle cx="80" cy="78" r="22" fill="#5b4cd4" opacity=".08"/>
+      <circle cx="80" cy="68" r="14" fill="#5b4cd4" opacity=".9"/>
+      <path d="M62 100c0-10 8-18 18-18s18 8 18 18" fill="#5b4cd4" opacity=".5"/>
       <!-- Left speech bubble -->
-      <rect x="20" y="16" rx="12" ry="12" width="70" height="36" fill="#7c6aff" opacity=".2" stroke="#7c6aff" stroke-width="1" stroke-opacity=".3"/>
-      <polygon points="68,52 60,62 76,52" fill="#7c6aff" opacity=".2"/>
-      <rect x="32" y="28" width="28" height="3" rx="1.5" fill="#9d8cff" opacity=".5"/>
-      <rect x="36" y="36" width="20" height="3" rx="1.5" fill="#9d8cff" opacity=".35"/>
-      <!-- Lightning bolt (clash of ideas) -->
-      <path d="M152 40l8-20h12l-8 20h10l-20 36 6-22h-12z" fill="#f59e0b" opacity=".6"/>
-      <path d="M152 40l8-20h12l-8 20h10l-20 36 6-22h-12z" fill="none" stroke="#f59e0b" stroke-width=".5" opacity=".8"/>
+      <rect x="22" y="12" rx="12" ry="12" width="68" height="34" fill="#5b4cd4" opacity=".08" stroke="#5b4cd4" stroke-width="1" stroke-opacity=".15"/>
+      <polygon points="66,46 58,56 74,46" fill="#5b4cd4" opacity=".08"/>
+      <rect x="34" y="24" width="26" height="3" rx="1.5" fill="#5b4cd4" opacity=".25"/>
+      <rect x="38" y="32" width="18" height="3" rx="1.5" fill="#5b4cd4" opacity=".15"/>
+      <!-- Lightning bolt -->
+      <path d="M152 36l8-18h11l-8 18h9l-18 32 5-20h-11z" fill="#f59e0b" opacity=".7"/>
       <!-- Right person -->
-      <circle cx="240" cy="82" r="22" fill="#6366f1" opacity=".15"/>
-      <circle cx="240" cy="72" r="14" fill="#818cf8"/>
-      <path d="M222 105c0-10 8-18 18-18s18 8 18 18" fill="#818cf8" opacity=".7"/>
+      <circle cx="240" cy="78" r="22" fill="#7c6aff" opacity=".08"/>
+      <circle cx="240" cy="68" r="14" fill="#7c6aff" opacity=".9"/>
+      <path d="M222 100c0-10 8-18 18-18s18 8 18 18" fill="#7c6aff" opacity=".5"/>
       <!-- Right speech bubble -->
-      <rect x="230" y="16" rx="12" ry="12" width="70" height="36" fill="#6366f1" opacity=".2" stroke="#6366f1" stroke-width="1" stroke-opacity=".3"/>
-      <polygon points="244,52 252,62 236,52" fill="#6366f1" opacity=".2"/>
-      <rect x="244" y="28" width="28" height="3" rx="1.5" fill="#818cf8" opacity=".5"/>
-      <rect x="248" y="36" width="20" height="3" rx="1.5" fill="#818cf8" opacity=".35"/>
-      <!-- Small floating dots (ideas) -->
-      <circle cx="140" cy="28" r="3" fill="#7c6aff" opacity=".3"><animate attributeName="cy" values="28;22;28" dur="3s" repeatCount="indefinite"/></circle>
-      <circle cx="170" cy="35" r="2" fill="#818cf8" opacity=".25"><animate attributeName="cy" values="35;28;35" dur="2.5s" repeatCount="indefinite"/></circle>
-      <circle cx="155" cy="20" r="2.5" fill="#f59e0b" opacity=".2"><animate attributeName="cy" values="20;14;20" dur="4s" repeatCount="indefinite"/></circle>
+      <rect x="230" y="12" rx="12" ry="12" width="68" height="34" fill="#7c6aff" opacity=".08" stroke="#7c6aff" stroke-width="1" stroke-opacity=".15"/>
+      <polygon points="244,46 252,56 236,46" fill="#7c6aff" opacity=".08"/>
+      <rect x="244" y="24" width="26" height="3" rx="1.5" fill="#7c6aff" opacity=".25"/>
+      <rect x="248" y="32" width="18" height="3" rx="1.5" fill="#7c6aff" opacity=".15"/>
+      <!-- Floating idea dots -->
+      <circle cx="140" cy="24" r="3" fill="#5b4cd4" opacity=".2"><animate attributeName="cy" values="24;18;24" dur="3s" repeatCount="indefinite"/></circle>
+      <circle cx="170" cy="30" r="2" fill="#7c6aff" opacity=".15"><animate attributeName="cy" values="30;24;30" dur="2.5s" repeatCount="indefinite"/></circle>
+      <circle cx="155" cy="16" r="2.5" fill="#f59e0b" opacity=".2"><animate attributeName="cy" values="16;10;16" dur="4s" repeatCount="indefinite"/></circle>
     </svg>
-    <h1 class="fade-in">No<b>va</b></h1>
-    <p class="tag fade-in fade-in-d1">Debate ideas with strangers — live.</p>
-    <div class="auth-box fade-in fade-in-d2">
-      <div class="tos-row" id="age-row" style="margin-bottom:8px">
-        <input type="checkbox" id="age-cb">
-        <label for="age-cb"><strong style="color:var(--tx)">I confirm I am 18 years or older</strong></label>
+
+    <h1>No<b>va</b></h1>
+    <p class="tag">Debate ideas with strangers — live.</p>
+
+    <div class="card fade-in fade-in-d1" style="padding:24px 24px 20px;margin-bottom:20px">
+      <div class="auth-box">
+        <div class="tos-row" id="age-row" style="margin-bottom:8px">
+          <input type="checkbox" id="age-cb">
+          <label for="age-cb"><strong>I confirm I am 18 years or older</strong></label>
+        </div>
+        <div class="tos-row" id="tos-row" style="margin-bottom:14px">
+          <input type="checkbox" id="tos-cb">
+          <label for="tos-cb">I agree to the <a href="/tos" target="_blank">Terms of Service</a> & <a href="/privacy" target="_blank">Privacy Policy</a></label>
+        </div>
+        <div class="g-wrap"><div id="g-btn"></div></div>
+        <div class="ae" id="a-err"></div>
       </div>
-      <div class="tos-row" id="tos-row" style="margin-bottom:14px">
-        <input type="checkbox" id="tos-cb">
-        <label for="tos-cb">I agree to the <a href="/tos" target="_blank">Terms of Service</a> & <a href="/privacy" target="_blank">Privacy Policy</a></label>
+    </div>
+  </div>
+
+  <!-- Product Features -->
+  <div class="features fade-in fade-in-d2">
+    <div class="features-grid">
+      <div class="feat">
+        <span class="feat-icon">🎙</span>
+        <div>
+          <h3>Live Video Debates</h3>
+          <p>Face-to-face conversations with people who think differently. No text — real talk.</p>
+        </div>
       </div>
-      <div class="g-wrap"><div id="g-btn"></div></div>
-      <div class="ae" id="a-err"></div>
+      <div class="feat">
+        <span class="feat-icon">🌍</span>
+        <div>
+          <h3>Global Perspectives</h3>
+          <p>Connect with strangers worldwide. Hear opinions you'd never encounter in your bubble.</p>
+        </div>
+      </div>
+      <div class="feat">
+        <span class="feat-icon">🔒</span>
+        <div>
+          <h3>Safe & Private</h3>
+          <p>Peer-to-peer video. We never see or store your calls. Report tools keep discussions civil.</p>
+        </div>
+      </div>
+      <div class="feat">
+        <span class="feat-icon">⚡</span>
+        <div>
+          <h3>Instant Matching</h3>
+          <p>No waiting rooms. You're matched with someone new the moment you join.</p>
+        </div>
+      </div>
+      <div class="feat">
+        <span class="feat-icon">🧠</span>
+        <div>
+          <h3>Challenge Your Views</h3>
+          <p>Philosophy, politics, culture, life — discuss anything that matters with real people.</p>
+        </div>
+      </div>
+      <div class="feat">
+        <span class="feat-icon">💯</span>
+        <div>
+          <h3>100% Free</h3>
+          <p>No subscriptions, no paywalls. Just sign in and start talking.</p>
+        </div>
+      </div>
     </div>
-    <div class="shield fade-in fade-in-d3">
-      🛡 <b>Safe & civil discussions.</b><br>
-      All connections are logged. Data retained for {{ retention_days }} days.
+
+    <div class="shield fade-in fade-in-d3" style="margin-top:1.6rem">
+      🛡 <b>Safe & civil discussions.</b> All connections are logged for legal compliance. Data retained for {{ retention_days }} days.
     </div>
-    <div class="contact fade-in fade-in-d3">Contact: <a href="mailto:rahul@simpleintelligence.com">rahul@simpleintelligence.com</a></div>
+    <div class="contact fade-in fade-in-d4">Contact: <a href="mailto:rahul@simpleintelligence.com">rahul@simpleintelligence.com</a></div>
+
     {% if adsense_id %}
     <div class="ad-slot" id="ad-auth">
       <div class="ad-label">Advertisement</div>
@@ -216,11 +277,12 @@ body{font:15px/1.6 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sa
     </div>
     {% endif %}
   </div>
+
 </div>
 
 <!-- ═══ Nickname Prompt ═══ -->
-<div id="N" class="s">
-  <div class="glass fade-in" style="max-width:400px;width:90%;margin:0 auto;text-align:center">
+<div id="N" class="s" style="background:var(--bg2)">
+  <div class="card fade-in" style="max-width:400px;width:90%;margin:auto;text-align:center">
     <h1>No<b>va</b></h1>
     <p class="tag" style="margin-bottom:1.4rem">Choose a nickname</p>
     <div class="auth-box">
@@ -234,7 +296,7 @@ body{font:15px/1.6 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sa
 
 <!-- ═══ Lobby ═══ -->
 <div id="L" class="s">
-  <div class="glass fade-in" style="max-width:420px;width:90%;margin:0 auto;text-align:center">
+  <div class="card fade-in" style="max-width:420px;width:90%;margin:auto;text-align:center">
     <h1>No<b>va</b></h1>
     <p class="tag">Real-time video debates with strangers</p>
     <div class="ub">
@@ -282,11 +344,11 @@ body{font:15px/1.6 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sa
   </div>
 
   <!-- Report Modal -->
-  <div id="rpt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
-    <div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:16px;padding:28px;max-width:340px;width:90%;text-align:center;font-family:inherit;box-shadow:0 8px 40px rgba(0,0,0,.5)">
-      <h3 style="margin-bottom:8px;font-size:16px;color:#f0f0f5">⚠️ Report User</h3>
-      <p style="color:#8888aa;font-size:12px;margin-bottom:12px">Select a reason for reporting this user</p>
-      <select id="rpt-reason" style="width:100%;padding:10px;border:1px solid #2a2a4a;border-radius:10px;font:inherit;font-size:13px;margin-bottom:8px;background:#15152a;color:#f0f0f5;outline:none">
+  <div id="rpt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+    <div style="background:#fff;border:1px solid #e2e2ea;border-radius:16px;padding:28px;max-width:340px;width:90%;text-align:center;font-family:inherit;box-shadow:0 8px 40px rgba(0,0,0,.15)">
+      <h3 style="margin-bottom:8px;font-size:16px;color:#1a1a2e">⚠️ Report User</h3>
+      <p style="color:#6b6b80;font-size:12px;margin-bottom:12px">Select a reason for reporting this user</p>
+      <select id="rpt-reason" style="width:100%;padding:10px;border:1px solid #e2e2ea;border-radius:10px;font:inherit;font-size:13px;margin-bottom:8px;background:#f7f7fb;color:#1a1a2e;outline:none">
         <option value="">— Select reason —</option>
         <option value="harassment">Harassment / Bullying</option>
         <option value="inappropriate">Inappropriate Content</option>
@@ -295,12 +357,12 @@ body{font:15px/1.6 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sa
         <option value="illegal">Illegal Activity</option>
         <option value="other">Other</option>
       </select>
-      <textarea id="rpt-details" placeholder="Optional details…" maxlength="500" rows="2" style="width:100%;padding:8px;border:1px solid #2a2a4a;border-radius:10px;font:inherit;font-size:12px;resize:none;margin-bottom:12px;background:#15152a;color:#f0f0f5;outline:none"></textarea>
+      <textarea id="rpt-details" placeholder="Optional details…" maxlength="500" rows="2" style="width:100%;padding:8px;border:1px solid #e2e2ea;border-radius:10px;font:inherit;font-size:12px;resize:none;margin-bottom:12px;background:#f7f7fb;color:#1a1a2e;outline:none"></textarea>
       <div style="display:flex;gap:8px;justify-content:center">
-        <button onclick="closeReport()" style="padding:8px 20px;border-radius:10px;border:1px solid #2a2a4a;background:transparent;color:#8888aa;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+        <button onclick="closeReport()" style="padding:8px 20px;border-radius:10px;border:1px solid #e2e2ea;background:#f7f7fb;color:#6b6b80;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
         <button onclick="submitReport()" style="padding:8px 20px;border-radius:10px;border:none;background:#ef4444;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Report</button>
       </div>
-      <div id="rpt-msg" style="color:#34d399;font-size:12px;margin-top:8px;min-height:16px"></div>
+      <div id="rpt-msg" style="color:#10b981;font-size:12px;margin-top:8px;min-height:16px"></div>
     </div>
   </div>
 </div>
