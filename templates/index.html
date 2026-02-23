@@ -46,7 +46,7 @@ body{font:16px/1.7 'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',R
 /* ── Auth (scrollable landing) ── */
 #A{flex-direction:column;align-items:center;background:#fff}
 .hero{width:100%;max-width:520px;padding:48px 20px 32px;text-align:center}
-.hero h1{font-size:3rem;font-weight:700;margin-bottom:8px}
+.hero h1{font-size:5rem;font-weight:700;margin-bottom:8px;letter-spacing:-2px}
 .hero .tag{color:var(--tx2);font-size:17px;margin-bottom:2rem}
 .auth-box{max-width:320px;margin:0 auto}
 .g-wrap{margin-bottom:12px;display:flex;justify-content:center}
@@ -73,7 +73,7 @@ body{font:16px/1.7 'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',R
 
 /* ── Lobby ── */
 #L{align-items:center;justify-content:center;text-align:center;background:#fff}
-#L h1{font-size:3rem;font-weight:700;margin-bottom:6px}
+#L h1{font-size:5rem;font-weight:700;margin-bottom:6px;letter-spacing:-2px}
 #L .tag{color:var(--tx2);margin-bottom:1.2rem;font-size:16px}
 .ob{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--br);border-radius:99px;padding:5px 14px;font-size:13px;color:var(--tx);margin-bottom:1.2rem;font-weight:500}
 .ob .d{width:7px;height:7px;border-radius:50%;background:#000;animation:pulse-dot 2s infinite}
@@ -91,7 +91,7 @@ body{font:16px/1.7 'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',R
 
 /* ── Nickname ── */
 #N{align-items:center;justify-content:center;text-align:center;background:#fff}
-#N h1{font-size:2.2rem;font-weight:700}
+#N h1{font-size:5rem;font-weight:700;letter-spacing:-2px}
 .nick-input{width:100%;padding:12px 14px;border:1px solid var(--br);border-radius:8px;font:inherit;font-size:15px;outline:none;text-align:center;background:#fff;color:var(--tx)}
 .nick-input:focus{border-color:#888}
 
@@ -125,7 +125,7 @@ body{font:16px/1.7 'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',R
 .ad-label{font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
 
 @media(max-width:600px){
-  .hero h1,#L h1,#N h1{font-size:2.2rem}
+  .hero h1,#L h1,#N h1{font-size:3.2rem}
   .hero{padding:32px 16px 20px}
   .auth-box{max-width:280px}
   .features-grid{grid-template-columns:1fr}
@@ -195,13 +195,6 @@ body{font:16px/1.7 'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',R
       All connections are logged for legal compliance. Data retained for {{ retention_days }} days.
     </div>
     <div class="contact">Contact: <a href="mailto:rahul@simpleintelligence.com">rahul@simpleintelligence.com</a></div>
-
-    {% if adsense_id %}
-    <div class="ad-slot" id="ad-auth">
-      <div class="ad-label">Advertisement</div>
-      <ins class="adsbygoogle" style="display:block" data-ad-client="{{ adsense_id }}" data-ad-slot="auth-banner" data-ad-format="auto" data-full-width-responsive="true"></ins>
-    </div>
-    {% endif %}
   </div>
 
 </div>
@@ -209,7 +202,7 @@ body{font:16px/1.7 'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',R
 <!-- ═══ Nickname Prompt ═══ -->
 <div id="N" class="s">
   <div style="max-width:360px;width:90%;margin:auto;text-align:center;padding:60px 0">
-    <h1 style="font-size:3rem;font-weight:700;margin-bottom:6px">Nova</h1>
+    <h1>Nova</h1>
     <p style="color:var(--tx2);margin-bottom:1.4rem;font-size:16px">Choose a nickname</p>
     <div class="auth-box">
       <p style="font-size:13px;color:var(--tx2);margin-bottom:1rem">This is how others will see you in discussions</p>
@@ -223,7 +216,7 @@ body{font:16px/1.7 'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',R
 <!-- ═══ Lobby ═══ -->
 <div id="L" class="s">
   <div style="max-width:400px;width:90%;margin:auto;text-align:center;padding:60px 0">
-    <h1 style="font-size:3rem;font-weight:700;margin-bottom:6px">Nova</h1>
+    <h1>Nova</h1>
     <p class="tag">Real-time video debates with strangers</p>
     <div class="ub">
       <img id="uavatar" src="" alt="" style="display:none">
@@ -238,12 +231,6 @@ body{font:16px/1.7 'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',R
       <button class="bl" id="del-acct" title="Delete your account">🗑 Delete Account</button>
     </div>
     <div class="contact">Contact: <a href="mailto:rahul@simpleintelligence.com">rahul@simpleintelligence.com</a> · <a href="/privacy" target="_blank">Privacy</a> · <a href="/tos" target="_blank">Terms</a></div>
-    {% if adsense_id %}
-    <div class="ad-slot" id="ad-lobby">
-      <div class="ad-label">Advertisement</div>
-      <ins class="adsbygoogle" style="display:block" data-ad-client="{{ adsense_id }}" data-ad-slot="lobby-banner" data-ad-format="auto" data-full-width-responsive="true"></ins>
-    </div>
-    {% endif %}
   </div>
 </div>
 
@@ -268,6 +255,12 @@ body{font:16px/1.7 'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',R
     <button class="ctrl-btn white" id="rpt-btn" title="Report user"><svg viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
     <button class="ctrl-btn red" id="dc" title="Disconnect"><svg viewBox="0 0 24 24" style="stroke-width:2.5"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>
   </div>
+
+  {% if adsense_id %}
+  <div class="ad-slot" id="ad-video" style="background:#111;padding:4px 0">
+    <ins class="adsbygoogle" style="display:block" data-ad-client="{{ adsense_id }}" data-ad-slot="video-banner" data-ad-format="horizontal" data-full-width-responsive="true"></ins>
+  </div>
+  {% endif %}
 
   <!-- Report Modal -->
   <div id="rpt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center">
