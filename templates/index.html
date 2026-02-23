@@ -6,6 +6,9 @@
 <title>Nova — Debate &amp; Discuss Ideas with Strangers | Live Video Discussion Platform</title>
 <meta name="description" content="Nova is a real-time video debate platform. Challenge your perspective — discuss topics, exchange opinions, and have intellectual conversations with strangers worldwide.">
 <meta name="keywords" content="debate with strangers, online debate platform, discuss topics with strangers, talk to strangers about ideas, live discussion platform, video debate platform, random discussion chat, debate random people online, public discussion video chat, hear different opinions online, talk to people with different views, philosophy discussion online, global discussion platform, live conversation with strangers, anonymous discussion platform, peer to peer discussion platform, intellectual conversation online, challenge your perspective, real time debate platform, civil debate online, structured online discussions, meet people to debate ideas, global opinion exchange, open discussion video platform">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
 <!-- Google Ads (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-676753769"></script>
 <script>
@@ -32,104 +35,139 @@ function gtag_report_conversion(url) {
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#fff;--bg2:#f5f5f5;--br:#ddd;
-  --tx:#222;--tx2:#777;--ac:#4a3fc0;--gn:#1a9;--rd:#d44;--yl:#c90
+  --bg:#0b0b1a;--bg2:#15152a;--bg3:#1e1e38;
+  --br:#2a2a4a;--br2:#3a3a5a;
+  --tx:#f0f0f5;--tx2:#8888aa;--tx3:#55557a;
+  --ac:#7c6aff;--ac2:#9d8cff;--ac3:#5b4cd4;
+  --gn:#34d399;--rd:#ef4444;--yl:#f59e0b
 }
 html,body{height:100%;overflow:hidden}
-body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:var(--bg);color:var(--tx)}
+body{font:15px/1.6 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--tx)}
 
-.s{display:none;height:100%;width:100%}.s.on{display:flex}
+/* subtle animated gradient bg */
+.bg-glow{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.bg-glow::before,.bg-glow::after{content:'';position:absolute;border-radius:50%;filter:blur(120px);opacity:.15;animation:glow 12s ease-in-out infinite alternate}
+.bg-glow::before{width:600px;height:600px;background:var(--ac);top:-200px;left:-100px}
+.bg-glow::after{width:500px;height:500px;background:#6366f1;bottom:-200px;right:-100px;animation-delay:6s}
+@keyframes glow{0%{transform:translate(0,0) scale(1)}100%{transform:translate(60px,40px) scale(1.15)}}
+
+.s{display:none;height:100%;width:100%;position:relative;z-index:1}.s.on{display:flex}
+
+/* glass card */
+.glass{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:32px 28px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(0,0,0,.3)}
 
 /* auth */
-#A{align-items:center;justify-content:center;text-align:center;background:var(--bg)}
-#A h1{font-size:2.4rem;font-weight:800;margin-bottom:.2rem;color:var(--tx)}
-#A h1 b{color:var(--ac)}
-#A .tag{color:var(--tx2);margin-bottom:1.6rem}
-.auth-box{width:300px;margin:0 auto}
+#A{align-items:center;justify-content:center;text-align:center}
+#A h1{font-size:2.8rem;font-weight:800;margin-bottom:.3rem;letter-spacing:-1px}
+#A h1 b{background:linear-gradient(135deg,var(--ac),var(--ac2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+#A .tag{color:var(--tx2);margin-bottom:1.8rem;font-size:15px;font-weight:400}
+.auth-box{width:320px;margin:0 auto}
 .g-wrap{margin-bottom:14px;display:flex;justify-content:center}
-.ae{color:var(--rd);font-size:13px;min-height:18px;margin-top:4px}
-.shield{margin-top:1.5rem;font-size:11px;color:var(--tx2);opacity:.7;line-height:1.6}
-.shield b{color:var(--tx)}
+.ae{color:var(--rd);font-size:13px;min-height:18px;margin-top:6px}
+.shield{margin-top:1.6rem;font-size:11px;color:var(--tx3);line-height:1.7}
+.shield b{color:var(--tx2)}
 .tos-row{display:flex;align-items:flex-start;gap:8px;margin-top:10px;text-align:left;font-size:12px;color:var(--tx2)}
-.tos-row input[type=checkbox]{margin-top:3px;accent-color:var(--ac);cursor:pointer;flex-shrink:0}
-.tos-row a{color:var(--ac);text-decoration:underline}
+.tos-row input[type=checkbox]{margin-top:3px;accent-color:var(--ac);cursor:pointer;flex-shrink:0;width:16px;height:16px}
+.tos-row a{color:var(--ac2);text-decoration:none;border-bottom:1px solid var(--ac3)}
+.tos-row a:hover{color:var(--ac);border-color:var(--ac)}
 
 /* lobby */
-#L{align-items:center;justify-content:center;text-align:center;background:var(--bg)}
-#L h1{font-size:2.4rem;font-weight:800;margin-bottom:.3rem;color:var(--tx)}
-#L h1 b{color:var(--ac)}
-#L .tag{color:var(--tx2);margin-bottom:1.4rem}
-.ob{display:inline-flex;align-items:center;gap:6px;background:#1a91;border:1px solid #1a93;border-radius:99px;padding:4px 14px;font-size:13px;color:var(--gn);margin-bottom:1.4rem}
-.ob .d{width:7px;height:7px;border-radius:50%;background:var(--gn)}
+#L{align-items:center;justify-content:center;text-align:center}
+#L h1{font-size:2.8rem;font-weight:800;margin-bottom:.3rem;letter-spacing:-1px}
+#L h1 b{background:linear-gradient(135deg,var(--ac),var(--ac2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+#L .tag{color:var(--tx2);margin-bottom:1.4rem;font-size:15px}
+.ob{display:inline-flex;align-items:center;gap:7px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:99px;padding:6px 16px;font-size:13px;color:var(--gn);margin-bottom:1.4rem;font-weight:500}
+.ob .d{width:8px;height:8px;border-radius:50%;background:var(--gn);box-shadow:0 0 8px var(--gn);animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;box-shadow:0 0 8px var(--gn)}50%{opacity:.5;box-shadow:0 0 16px var(--gn)}}
 .ub{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;color:var(--tx2);margin-bottom:1.2rem}
-.ub img{width:24px;height:24px;border-radius:50%}
+.ub img{width:28px;height:28px;border-radius:50%;border:2px solid var(--br)}
 .ub strong{color:var(--tx)}
 
-.b{font:inherit;font-weight:600;font-size:14px;border:none;border-radius:10px;cursor:pointer;padding:8px 18px;display:inline-flex;align-items:center;gap:6px}
-.bp{background:var(--ac);color:#fff;font-size:16px;padding:14px 36px;border-radius:14px}
-.bp:hover{opacity:.9}
-.bl{background:none;color:var(--tx2);font-size:12px;padding:4px 10px;border:1px solid var(--br);border-radius:6px;cursor:pointer}
-.bl:hover{background:var(--bg2)}
-.sub{margin-top:1rem;font-size:12px;color:var(--tx2);opacity:.6}
+.b{font:inherit;font-weight:600;font-size:14px;border:none;border-radius:12px;cursor:pointer;padding:8px 18px;display:inline-flex;align-items:center;gap:6px;transition:all .2s}
+.bp{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;font-size:16px;padding:16px 40px;border-radius:14px;box-shadow:0 4px 20px rgba(124,106,255,.3);letter-spacing:.3px}
+.bp:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(124,106,255,.45)}
+.bp:active{transform:translateY(0)}
+.bl{background:rgba(255,255,255,.04);color:var(--tx2);font-size:12px;padding:6px 12px;border:1px solid var(--br);border-radius:8px;cursor:pointer;transition:all .2s}
+.bl:hover{background:rgba(255,255,255,.08);border-color:var(--br2);color:var(--tx)}
+.sub{margin-top:1rem;font-size:12px;color:var(--tx3)}
+
+/* nickname */
+#N{align-items:center;justify-content:center;text-align:center}
+#N h1{font-size:2.8rem;font-weight:800;letter-spacing:-1px}
+#N h1 b{background:linear-gradient(135deg,var(--ac),var(--ac2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.nick-input{width:100%;padding:14px 16px;border:1px solid var(--br);border-radius:12px;font:inherit;font-size:15px;outline:none;text-align:center;background:var(--bg2);color:var(--tx);transition:border-color .2s}
+.nick-input:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(124,106,255,.15)}
 
 /* video chat */
 #C{flex-direction:column;background:#000}
-.vid-area{flex:1;position:relative;overflow:hidden;background:#000}
+.vid-area{flex:1;position:relative;overflow:hidden;background:#0a0a0a}
 #rv{width:100%;height:100%;object-fit:cover;background:#111}
-#lv{position:absolute;bottom:16px;right:16px;width:160px;height:120px;border-radius:12px;border:2px solid #fff3;z-index:2;object-fit:cover;background:#222}
+#lv{position:absolute;bottom:16px;right:16px;width:160px;height:120px;border-radius:14px;border:2px solid rgba(255,255,255,.15);z-index:2;object-fit:cover;background:#1a1a1a;box-shadow:0 4px 20px rgba(0,0,0,.5)}
 .vid-status{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#fff;z-index:1}
 .vid-status button{pointer-events:auto}
 .vid-status .vs-text{font-size:18px;font-weight:600;margin-bottom:8px}
-.vid-status .vs-sub{font-size:13px;color:#aaa}
-.vid-status .spinner{width:40px;height:40px;border:3px solid #333;border-top-color:var(--ac);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 12px}
+.vid-status .vs-sub{font-size:13px;color:#888}
+.vid-status .spinner{width:40px;height:40px;border:3px solid #222;border-top-color:var(--ac);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 12px}
 @keyframes sp{to{transform:rotate(360deg)}}
 
 /* bottom controls */
-.controls{display:flex;align-items:center;justify-content:center;gap:14px;padding:16px;background:#111;flex-shrink:0;border-top:1px solid #222}
-.ctrl-btn{width:50px;height:50px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.controls{display:flex;align-items:center;justify-content:center;gap:14px;padding:16px;background:#0e0e0e;flex-shrink:0;border-top:1px solid #1a1a1a}
+.ctrl-btn{width:50px;height:50px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
 .ctrl-btn svg{width:22px;height:22px;stroke-width:2;fill:none;stroke:currentColor}
-.ctrl-btn.white{background:#fff;color:#222}
-.ctrl-btn.white:hover{background:#e0e0e0}
-.ctrl-btn.red{background:#e53935;color:#fff}
-.ctrl-btn.red:hover{background:#c62828}
-.ctrl-btn.off{background:#e53935;color:#fff}
-.ctrl-btn.off:hover{background:#c62828}
-.online-sm{display:flex;align-items:center;gap:5px;font-size:12px;color:#fff;position:absolute;top:12px;right:16px;z-index:3;background:#0008;padding:4px 10px;border-radius:20px;backdrop-filter:blur(4px)}
-.online-sm .d{width:6px;height:6px;border-radius:50%;background:var(--gn)}
-.logo-sm{position:absolute;top:12px;left:16px;z-index:3;font-weight:700;font-size:14px;color:#fff;background:#0008;padding:4px 12px;border-radius:20px;backdrop-filter:blur(4px)}
-.logo-sm b{color:var(--ac)}
+.ctrl-btn.white{background:rgba(255,255,255,.12);color:#fff;backdrop-filter:blur(8px)}
+.ctrl-btn.white:hover{background:rgba(255,255,255,.2)}
+.ctrl-btn.red{background:var(--rd);color:#fff}
+.ctrl-btn.red:hover{background:#dc2626}
+.ctrl-btn.off{background:var(--rd);color:#fff}
+.ctrl-btn.off:hover{background:#dc2626}
+.online-sm{display:flex;align-items:center;gap:5px;font-size:12px;color:#fff;position:absolute;top:12px;right:16px;z-index:3;background:rgba(0,0,0,.5);padding:5px 12px;border-radius:20px;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.06)}
+.online-sm .d{width:6px;height:6px;border-radius:50%;background:var(--gn);box-shadow:0 0 6px var(--gn)}
+.logo-sm{position:absolute;top:12px;left:16px;z-index:3;font-weight:700;font-size:14px;color:#fff;background:rgba(0,0,0,.5);padding:5px 14px;border-radius:20px;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.06)}
+.logo-sm b{color:var(--ac2)}
 
 /* contact */
-.contact{margin-top:1.2rem;font-size:11px;color:var(--tx2);opacity:.6}
-.contact a{color:var(--ac);text-decoration:none}
-.contact a:hover{text-decoration:underline}
+.contact{margin-top:1.4rem;font-size:11px;color:var(--tx3)}
+.contact a{color:var(--tx2);text-decoration:none;transition:color .2s}
+.contact a:hover{color:var(--ac2)}
 
 /* ads */
 .ad-slot{margin:16px auto;text-align:center;overflow:hidden;max-width:728px;min-height:50px}
-.ad-label{font-size:9px;color:var(--tx2);opacity:.4;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
+.ad-label{font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
+
+/* fade in animation */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeUp .5s ease-out both}
+.fade-in-d1{animation-delay:.1s}
+.fade-in-d2{animation-delay:.2s}
+.fade-in-d3{animation-delay:.3s}
 
 @media(max-width:600px){
-  #A h1,#L h1{font-size:1.8rem}
-  .auth-box{width:260px}
+  #A h1,#L h1,#N h1{font-size:2rem}
+  .auth-box{width:280px}
+  .glass{padding:24px 20px}
   #lv{width:100px;height:75px;bottom:10px;right:10px}
   .ctrl-btn{width:44px;height:44px}
   .ctrl-btn svg{width:18px;height:18px}
   .controls{gap:10px;padding:12px}
   .ad-slot{max-width:320px}
+  .bp{padding:14px 32px;font-size:15px}
 }
 </style>
 </head>
 <body>
 
+<!-- Background glow -->
+<div class="bg-glow"></div>
+
 <!-- ═══ Auth Screen ═══ -->
 <div id="A" class="s on">
-  <div>
-    <h1>No<b>va</b></h1>
-    <p class="tag">Debate ideas with strangers — live.</p>
-    <div class="auth-box">
+  <div class="glass fade-in" style="max-width:400px;width:90%;margin:0 auto">
+    <h1 class="fade-in">No<b>va</b></h1>
+    <p class="tag fade-in fade-in-d1">Debate ideas with strangers — live.</p>
+    <div class="auth-box fade-in fade-in-d2">
       <div class="tos-row" id="age-row" style="margin-bottom:8px">
         <input type="checkbox" id="age-cb">
-        <label for="age-cb"><strong>I confirm I am 18 years or older</strong></label>
+        <label for="age-cb"><strong style="color:var(--tx)">I confirm I am 18 years or older</strong></label>
       </div>
       <div class="tos-row" id="tos-row" style="margin-bottom:14px">
         <input type="checkbox" id="tos-cb">
@@ -138,12 +176,11 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
       <div class="g-wrap"><div id="g-btn"></div></div>
       <div class="ae" id="a-err"></div>
     </div>
-    <div class="shield">
+    <div class="shield fade-in fade-in-d3">
       🛡 <b>Safe & civil discussions.</b><br>
-      All connections are logged for legal compliance.<br>
-      IP addresses and session data are retained for {{ retention_days }} days.
+      All connections are logged. Data retained for {{ retention_days }} days.
     </div>
-    <div class="contact">Contact: <a href="mailto:rahul@simpleintelligence.com">rahul@simpleintelligence.com</a></div>
+    <div class="contact fade-in fade-in-d3">Contact: <a href="mailto:rahul@simpleintelligence.com">rahul@simpleintelligence.com</a></div>
     {% if adsense_id %}
     <div class="ad-slot" id="ad-auth">
       <div class="ad-label">Advertisement</div>
@@ -155,13 +192,12 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
 
 <!-- ═══ Nickname Prompt ═══ -->
 <div id="N" class="s">
-  <div style="text-align:center">
+  <div class="glass fade-in" style="max-width:400px;width:90%;margin:0 auto;text-align:center">
     <h1>No<b>va</b></h1>
     <p class="tag" style="margin-bottom:1.4rem">Choose a nickname</p>
     <div class="auth-box">
       <p style="font-size:13px;color:var(--tx2);margin-bottom:1rem">This is how others will see you in discussions</p>
-      <input type="text" id="nick-in" maxlength="20" placeholder="Enter nickname (2-20 chars)"
-        style="width:100%;padding:12px 14px;border:1px solid var(--br);border-radius:10px;font:inherit;font-size:15px;outline:none;text-align:center;background:var(--bg2);color:var(--tx)">
+      <input type="text" id="nick-in" maxlength="20" placeholder="Enter nickname (2-20 chars)" class="nick-input">
       <button class="b bp" id="nick-go" style="width:100%;margin-top:12px;justify-content:center">Continue →</button>
       <div class="ae" id="nick-err"></div>
     </div>
@@ -170,7 +206,7 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
 
 <!-- ═══ Lobby ═══ -->
 <div id="L" class="s">
-  <div>
+  <div class="glass fade-in" style="max-width:420px;width:90%;margin:0 auto;text-align:center">
     <h1>No<b>va</b></h1>
     <p class="tag">Real-time video debates with strangers</p>
     <div class="ub">
@@ -181,9 +217,9 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
     <div class="ob"><span class="d"></span><span id="ol">0</span> online</div><br>
     <button class="b bp" id="go">🎙 Start a Discussion</button>
     <p class="sub">Peer-to-peer video · Hear different perspectives</p>
-    <div style="margin-top:1rem;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+    <div style="margin-top:1.2rem;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
       <button class="bl" id="dl-data" title="Download your data (GDPR)">📥 My Data</button>
-      <button class="bl" id="del-acct" style="color:var(--rd);border-color:var(--rd)" title="Delete your account">🗑 Delete Account</button>
+      <button class="bl" id="del-acct" style="color:var(--rd);border-color:rgba(239,68,68,.3)" title="Delete your account">🗑 Delete Account</button>
     </div>
     <div class="contact">Contact: <a href="mailto:rahul@simpleintelligence.com">rahul@simpleintelligence.com</a> · <a href="/privacy" target="_blank">Privacy</a> · <a href="/tos" target="_blank">Terms</a></div>
     {% if adsense_id %}
@@ -218,11 +254,11 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
   </div>
 
   <!-- Report Modal -->
-  <div id="rpt-modal" style="display:none;position:fixed;inset:0;background:#0007;z-index:100;align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:14px;padding:24px;max-width:340px;width:90%;text-align:center;font-family:inherit">
-      <h3 style="margin-bottom:8px;font-size:16px;color:#222">⚠️ Report User</h3>
-      <p style="color:#777;font-size:12px;margin-bottom:12px">Select a reason for reporting this user</p>
-      <select id="rpt-reason" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font:inherit;font-size:13px;margin-bottom:8px">
+  <div id="rpt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+    <div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:16px;padding:28px;max-width:340px;width:90%;text-align:center;font-family:inherit;box-shadow:0 8px 40px rgba(0,0,0,.5)">
+      <h3 style="margin-bottom:8px;font-size:16px;color:#f0f0f5">⚠️ Report User</h3>
+      <p style="color:#8888aa;font-size:12px;margin-bottom:12px">Select a reason for reporting this user</p>
+      <select id="rpt-reason" style="width:100%;padding:10px;border:1px solid #2a2a4a;border-radius:10px;font:inherit;font-size:13px;margin-bottom:8px;background:#15152a;color:#f0f0f5;outline:none">
         <option value="">— Select reason —</option>
         <option value="harassment">Harassment / Bullying</option>
         <option value="inappropriate">Inappropriate Content</option>
@@ -231,12 +267,12 @@ body{font:15px/1.6 "Courier New",Courier,"Lucida Console",monospace;background:v
         <option value="illegal">Illegal Activity</option>
         <option value="other">Other</option>
       </select>
-      <textarea id="rpt-details" placeholder="Optional details…" maxlength="500" rows="2" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font:inherit;font-size:12px;resize:none;margin-bottom:12px"></textarea>
+      <textarea id="rpt-details" placeholder="Optional details…" maxlength="500" rows="2" style="width:100%;padding:8px;border:1px solid #2a2a4a;border-radius:10px;font:inherit;font-size:12px;resize:none;margin-bottom:12px;background:#15152a;color:#f0f0f5;outline:none"></textarea>
       <div style="display:flex;gap:8px;justify-content:center">
-        <button onclick="closeReport()" style="padding:8px 20px;border-radius:8px;border:none;background:#eee;color:#555;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
-        <button onclick="submitReport()" style="padding:8px 20px;border-radius:8px;border:none;background:#d44;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Report</button>
+        <button onclick="closeReport()" style="padding:8px 20px;border-radius:10px;border:1px solid #2a2a4a;background:transparent;color:#8888aa;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+        <button onclick="submitReport()" style="padding:8px 20px;border-radius:10px;border:none;background:#ef4444;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Report</button>
       </div>
-      <div id="rpt-msg" style="color:#1a9;font-size:12px;margin-top:8px;min-height:16px"></div>
+      <div id="rpt-msg" style="color:#34d399;font-size:12px;margin-top:8px;min-height:16px"></div>
     </div>
   </div>
 </div>
