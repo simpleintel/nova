@@ -57,7 +57,7 @@ struct AuthView: View {
             }
             .toggleStyle(CheckboxToggleStyle())
 
-            GoogleSignInButton(.standard, style: .wide) {
+            GoogleSignInButton(scheme: .light, style: .wide, state: .signIn) {
                 handleGoogleSignIn()
             }
             .frame(height: 50)
