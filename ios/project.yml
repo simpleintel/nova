@@ -40,5 +40,5 @@ packages:
     url: https://github.com/google/GoogleSignIn-iOS
     from: "8.0.0"
   WebRTC:
-    url: https://github.com/nicklama/webrtc-swift-package
-    from: "1.0.0"
+    url: https://github.com/stasel/WebRTC
+    from: "125.0.0"
